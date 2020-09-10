@@ -1,5 +1,3 @@
-import javafx.util.Pair;
-
 import java.io.Serializable;
 import java.util.Random;
 import java.util.Vector;

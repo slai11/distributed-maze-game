@@ -1,5 +1,3 @@
-import javafx.util.Pair;
-
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -85,7 +83,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
     @Override
     public State register(Player p) throws Exception {
-        if (p.getName() == name) {
+        if (p.getName().equals(name)) {
             throw new Exception("cannot register with self");
         }
         if (playerType != PlayerType.Primary) {
@@ -105,7 +103,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             throw new Exception("not primary");
         }
 
-        if (caller == this.name) {
+        if (caller.equals(name)) {
             throw new Exception("cannot query from self");
         }
 
@@ -117,12 +115,12 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     }
 
     @Override
-    public State get(String name) throws Exception {
+    public State get(String caller) throws Exception {
         if (playerType == PlayerType.Primary) {
             throw new Exception("not server");
         }
 
-        if (name == this.name) {
+        if (caller.equals(this.name)) {
             throw new Exception("cannot query from self");
         }
 
@@ -138,7 +136,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
         int i;
         for (i = 0; i < state.players.size(); i++) {
-            if (state.players.get(i).name == name) {
+            if (state.players.get(i).name.equals(name)) {
                 break;
             }
         }
