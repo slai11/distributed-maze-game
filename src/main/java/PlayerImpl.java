@@ -1,11 +1,6 @@
 import javafx.util.Pair;
-import org.omg.PortableInterceptor.INACTIVE;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.rmi.RemoteException;
-import java.util.Vector;
-
-public class PlayerImpl implements Player {
+public class PlayerImpl implements Player  {
     public String name;
     public int score;
 
@@ -29,7 +24,7 @@ public class PlayerImpl implements Player {
         // since players contact tracker for (1) first joining and (2) crash recovery
         // the primary could have left. Iterating over player list is the safest method.
         // while slow, only THIS player experiences the slowness.
-        for (PlayerImpl player: Bootstrap.players) {
+        for (PlayerImpl player: bs.players) {
             try {
                 if (player.name == this.name) continue;
                 this.state = player.register(this);
@@ -41,6 +36,7 @@ public class PlayerImpl implements Player {
 
         if (this.state == null) {
             // this is primary - need to initialise State
+            System.out.println("IM THE BOSS");
             this.state = new State(this, bs.N, bs.K);
         }
 
@@ -144,7 +140,7 @@ public class PlayerImpl implements Player {
         }
 
         // send move to primary
-        for (PlayerImpl player: Bootstrap.players) {
+        for (PlayerImpl player: state.players) {
             try {
                 if (player.name == this.name) continue;
 
@@ -159,7 +155,11 @@ public class PlayerImpl implements Player {
 
     // TODO not implemented
     public void refreshState() {
-        for (PlayerImpl player: Bootstrap.players) {
+        if (playerType == PlayerType.Primary) {
+            System.out.print("nothing to refresh");
+        }
+
+        for (PlayerImpl player: state.players) {
             // QUESTION - can you freely reference a remote reference's attributes?
             if (player.playerType == PlayerType.Primary) continue;
             try {

@@ -1,10 +1,11 @@
+import java.io.Serializable;
 import java.util.Vector;
 
 /**
  * POJO to hold bootstrap items
  */
-public class Bootstrap {
-    public static Vector<PlayerImpl> players;
+public class Bootstrap implements Serializable {
+    public Vector<PlayerImpl> players;
     public int N;
     public int K;
 

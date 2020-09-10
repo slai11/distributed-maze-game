@@ -16,11 +16,15 @@ public class Game {
         int port = Integer.parseInt(args[1]);
         String id = args[2];
 
+        PlayerImpl playerRef = new PlayerImpl(id);
+
         // bootstrap phase
         TrackerRMI trackerRMIRef = (TrackerRMI) LocateRegistry.getRegistry(host, port).lookup("TrackerRMI");
-        PlayerImpl playerRef = new PlayerImpl(id);
         Bootstrap bs = trackerRMIRef.register(playerRef);
         playerRef.bootstrap(bs);
+        System.out.println(bs.players.size());
+
+        System.out.println("Bootstrapped and ready to go");
 
         // Input phase
         Scanner s = new Scanner(System.in);
@@ -30,15 +34,14 @@ public class Game {
                 case '0':
                     playerRef.refreshState();
                 case '1':
-                    playerRef.sendMove(Move.Up);
+                    playerRef.sendMove(Move.Left); // west
                 case '2':
-                    playerRef.sendMove(Move.Down);
+                    playerRef.sendMove(Move.Down); // south
                 case '3':
-                    playerRef.sendMove(Move.Left);
+                    playerRef.sendMove(Move.Left); // east
                 case '4':
-                    playerRef.sendMove(Move.Right);
+                    playerRef.sendMove(Move.Up); // north
             }
-
             // TODO update game GUI
 
             c = s.next().charAt(0);

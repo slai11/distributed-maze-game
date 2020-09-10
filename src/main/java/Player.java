@@ -1,3 +1,4 @@
+import java.io.Serializable;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
@@ -6,7 +7,7 @@ import java.rmi.RemoteException;
  * 1. server behaviours
  * 2. standard player behaviours
  */
-public interface Player extends Remote {
+public interface Player extends Remote, Serializable {
     // server behaviour
     void push(State latest) throws RemoteException, Exception;
 

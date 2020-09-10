@@ -1,5 +1,6 @@
 import javafx.util.Pair;
 
+import java.io.Serializable;
 import java.util.Random;
 import java.util.Vector;
 
@@ -8,7 +9,7 @@ import java.util.Vector;
  * players provide information of each player's score and location
  * treasures provide information of each treasure's location
  */
-public class State {
+public class State implements Serializable {
     public Vector<PlayerImpl> players;
     public Vector<Pair<Integer, Integer>> treasures;
     private int N;
@@ -19,13 +20,16 @@ public class State {
     public State(PlayerImpl primary, int n, int k) {
         this.N = n;
         this.K = k;
+        this.treasures = new Vector<Pair<Integer,Integer>>();
+        this.players = new Vector<PlayerImpl>();
+
         Random random = new Random();
         primary.setPosition(random.nextInt(N - 1), random.nextInt(N - 1));
-        // assign primary to game state
-        players = new Vector<PlayerImpl>();
-        players.add(primary);
-        // randomly generate k treasures
 
+        // assign primary to game state
+        players.add(primary);
+
+        // randomly generate k treasures
         for(int j = 0; j < K; ++j) {
             Pair<Integer, Integer> pos = randomPosition();
             treasures.add(pos);
@@ -44,7 +48,7 @@ public class State {
         while(!isUnique) {
             Random random = new Random();
             x = random.nextInt(N - 1);
-            y = random.nextInt( - 1);
+            y = random.nextInt(N - 1);
 
             isUnique = true;
 

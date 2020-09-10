@@ -29,6 +29,7 @@ public class Tracker implements TrackerRMI {
 
     @Override
     public Bootstrap register(PlayerImpl player) {
+        System.out.println("new player registering!");
         players.addElement(player);
         return new Bootstrap(players, N, K);
     }
