@@ -7,7 +7,7 @@ import java.util.Vector;
 
 public class Tracker implements TrackerRMI {
     // players here should not have game state, just player info
-    private Vector<PlayerImpl> players;
+    private Vector<Player> players;
     private Registry registry;
     private int port;
     private int N;
@@ -15,7 +15,7 @@ public class Tracker implements TrackerRMI {
 
     public Tracker(int port, int N, int K) {
         this.port = port;
-        this.players = new Vector<PlayerImpl>();
+        this.players = new Vector<Player>();
         this.N = N;
         this.K = K;
 
@@ -28,17 +28,17 @@ public class Tracker implements TrackerRMI {
     }
 
     @Override
-    public Bootstrap register(PlayerImpl player) {
+    public Bootstrap register(Player player) {
         System.out.println("new player registering!");
         players.addElement(player);
         return new Bootstrap(players, N, K);
     }
 
     @Override
-    public void unregister(String name) {
+    public void unregister(String name) throws RemoteException {
         int i;
         for (i = 0; i < players.size(); i++) {
-            if (players.get(i).name == name) {
+            if (players.get(i).getName() == name) {
                 break;
             }
         }

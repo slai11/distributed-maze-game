@@ -1,18 +1,19 @@
 import javafx.util.Pair;
 
-public class PlayerImpl implements Player  {
-    public String name;
-    public int score;
+import java.io.Serializable;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.Vector;
 
-    // position is ALWAYS determined by the primary
-    public Pair<Integer, Integer> position;
-
-    private State state;
+public class PlayerImpl extends UnicastRemoteObject implements Player, Serializable {
+    private String name;
+    public State state;
+    private Vector<Player> players;
     private PlayerType playerType;
 
-    public PlayerImpl(String name) {
+    public PlayerImpl(String name) throws RemoteException {
+        super();
         this.name = name;
-        this.score = 0;
     }
 
     /**
@@ -20,13 +21,14 @@ public class PlayerImpl implements Player  {
      * @param bs
      */
     public void bootstrap(Bootstrap bs) {
+        this.players = bs.players;
+
         // iterate over player list to register with primary
         // since players contact tracker for (1) first joining and (2) crash recovery
         // the primary could have left. Iterating over player list is the safest method.
         // while slow, only THIS player experiences the slowness.
-        for (PlayerImpl player: bs.players) {
+        for (Player player: players) {
             try {
-                if (player.name == this.name) continue;
                 this.state = player.register(this);
                 break;
             } catch (Exception e) {
@@ -36,34 +38,32 @@ public class PlayerImpl implements Player  {
 
         if (this.state == null) {
             // this is primary - need to initialise State
-            System.out.println("IM THE BOSS");
-            this.state = new State(this, bs.N, bs.K);
+            this.state = new State(name, bs.N, bs.K);
         }
 
         // determine player type
         switch (state.players.size()) {
             case 1:
-                playerType = PlayerType.Primary;
+                this.playerType = PlayerType.Primary;
                 break;
             case 2:
-                playerType = PlayerType.Backup;
+                this.playerType = PlayerType.Backup;
                 break;
             default:
-                playerType = PlayerType.Normal;
+                this.playerType = PlayerType.Normal;
         }
-    }
 
-    public void setPosition(Pair<Integer, Integer> pair) {
-        position = pair;
-    }
-
-    public void setPosition(int i, int j) {
-        position = new Pair<Integer, Integer>(i, j);
+        System.out.println(this + " is a " + playerType);
     }
 
     // ping does nothing. if its not contactable, remote exception is thrown
     @Override
     public void ping() {}
+
+    @Override
+    public String getName() {
+        return name;
+    }
 
     @Override
     public void push(State latest) throws Exception {
@@ -84,13 +84,17 @@ public class PlayerImpl implements Player  {
     }
 
     @Override
-    public State register(PlayerImpl p) throws Exception {
+    public State register(Player p) throws Exception {
+        if (p.getName() == name) {
+            throw new Exception("cannot register with self");
+        }
         if (playerType != PlayerType.Primary) {
+            System.out.println("cant reg with me, im " + name + " " + this + ", im a " + playerType);
             throw new Exception("not primary");
         }
 
         // TODO lock state when adding player
-        state.addPlayer(p);
+        state.addPlayer(p.getName());
 
         return state;
     }
@@ -100,15 +104,28 @@ public class PlayerImpl implements Player  {
         if (playerType != PlayerType.Primary) {
             throw new Exception("not primary");
         }
-        // TODO NOT IMPLEMENTED
-        return state;
+
+        if (caller == this.name) {
+            throw new Exception("cannot query from self");
+        }
+
+        System.out.println(caller + " asked to make " + move);
+
+        state.move(move, caller);
+
+        return this.state;
     }
 
     @Override
-    public State get() throws Exception {
+    public State get(String name) throws Exception {
         if (playerType == PlayerType.Primary) {
             throw new Exception("not server");
         }
+
+        if (name == this.name) {
+            throw new Exception("cannot query from self");
+        }
+
         // TODO must read-lock
         return state;
     }
@@ -137,20 +154,26 @@ public class PlayerImpl implements Player  {
     public void sendMove(Move move) {
         if (this.playerType == PlayerType.Primary) {
             // just update own game state, you're the boss here
+            System.out.println("im the primary so i change my own state");
+            state.move(move, name);
+            state.pretty();
+            return;
         }
 
         // send move to primary
-        for (PlayerImpl player: state.players) {
+        for (Player player: players) {
             try {
-                if (player.name == this.name) continue;
-
                 // non-server changes to game state does not need locking
-                this.state = player.move(move, name);
+                state = player.move(move, name);
                 break;
             } catch (Exception e) {
+                System.out.println(e.getMessage());
                 continue;
             }
         }
+
+        state.pretty();
+        System.out.println("DONE");
     };
 
     // TODO not implemented
@@ -159,12 +182,9 @@ public class PlayerImpl implements Player  {
             System.out.print("nothing to refresh");
         }
 
-        for (PlayerImpl player: state.players) {
-            // QUESTION - can you freely reference a remote reference's attributes?
-            if (player.playerType == PlayerType.Primary) continue;
+        for (Player player: players) {
             try {
-                if (player.name == this.name) continue;
-                this.state = player.get();
+                this.state = player.get(name);
                 break;
             } catch (Exception e) {
                 continue;

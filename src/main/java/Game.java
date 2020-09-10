@@ -22,6 +22,7 @@ public class Game {
         TrackerRMI trackerRMIRef = (TrackerRMI) LocateRegistry.getRegistry(host, port).lookup("TrackerRMI");
         Bootstrap bs = trackerRMIRef.register(playerRef);
         playerRef.bootstrap(bs);
+
         System.out.println(bs.players.size());
 
         System.out.println("Bootstrapped and ready to go");
@@ -33,14 +34,19 @@ public class Game {
             switch (c) {
                 case '0':
                     playerRef.refreshState();
+                    break;
                 case '1':
                     playerRef.sendMove(Move.Left); // west
+                    break;
                 case '2':
                     playerRef.sendMove(Move.Down); // south
+                    break;
                 case '3':
-                    playerRef.sendMove(Move.Left); // east
+                    playerRef.sendMove(Move.Right); // east
+                    break;
                 case '4':
                     playerRef.sendMove(Move.Up); // north
+                    break;
             }
             // TODO update game GUI
 
