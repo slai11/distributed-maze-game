@@ -58,6 +58,20 @@ public class Game {
                 case '4':
                     playerRef.sendMove(Move.Up); // north
                     break;
+
+                    // aswd backdoor
+                case 'a':
+                    playerRef.sendMove(Move.Left);
+                    break;
+                case 's':
+                    playerRef.sendMove(Move.Down);
+                    break;
+                case 'w':
+                    playerRef.sendMove(Move.Up);
+                    break;
+                case 'd':
+                    playerRef.sendMove(Move.Right);
+                    break;
             }
             panel.repaint();
             c = s.next().charAt(0);

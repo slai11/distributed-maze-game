@@ -220,6 +220,8 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     public class Maze extends JPanel {
         public int spacing = 5;
         private int grid = 350;
+
+        @Override
         public void paintComponent(Graphics g) {
             g.setColor(Color.gray);
             g.fillRect(0, 0, 2*grid, grid);
