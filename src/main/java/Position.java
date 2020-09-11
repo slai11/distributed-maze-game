@@ -14,6 +14,6 @@ public class Position implements Serializable {
         Font f = new Font("Arial", Font.BOLD, cellSize);
         g.setFont(f);
         g.setColor(Color.darkGray);
-        g.drawString("*", offset + x * cellSize + cellSize/4, spacing + y * cellSize);
+        g.drawString("*", offset + x * cellSize + cellSize/4, spacing + (y+1) * cellSize);
     }
 }

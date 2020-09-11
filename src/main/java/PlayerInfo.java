@@ -19,6 +19,7 @@ public class PlayerInfo implements Serializable {
         g.setColor(Color.black);
         g.drawString(name,  offset + pos.x * cellSize + cellSize/4, (pos.y+1) * cellSize - spacing);
 
+        f = new Font("Arial", Font.BOLD, 25);
         // Draw player's name
         g.drawString(name, cellSize, (i+1) * cellSize);
 
