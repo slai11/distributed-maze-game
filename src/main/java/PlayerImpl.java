@@ -74,8 +74,10 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             case Normal:
                 // normal player receiving a push means THIS player is now backup
                 playerType = PlayerType.Backup;
+
                 // TODO write-lock
                 this.state = latest;
+                this.players = players;
                 break;
             default:
                 throw new Exception("why push to me?");
