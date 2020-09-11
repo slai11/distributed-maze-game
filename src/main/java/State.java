@@ -39,7 +39,11 @@ public class State implements Serializable {
     public void pretty() {
         System.out.println("COUNT: " + count);
         for (PlayerInfo p: players) {
-            System.out.println(p.name + " has score " + p.score + ". Now at "+ p.pos.x + ", " + p.pos.y );
+            System.out.println(p.name + " has score " + p.score + ". Now at "+ (p.pos.x + 1) + ", " + (p.pos.y + 1) );
+        }
+
+        for (Position t: treasures) {
+            System.out.println("Treasure at "+ (t.x + 1) + ", " + (t.y + 1) );
         }
     }
 
@@ -61,10 +65,10 @@ public class State implements Serializable {
         Position newPosition;
         switch (move) {
             case Up:
-                newPosition = new Position(moving.pos.x, moving.pos.y + 1);
+                newPosition = new Position(moving.pos.x, moving.pos.y - 1);
                 break;
             case Down:
-                newPosition = new Position(moving.pos.x, moving.pos.y - 1);
+                newPosition = new Position(moving.pos.x, moving.pos.y + 1);
                 break;
             case Right:
                 newPosition = new Position(moving.pos.x + 1, moving.pos.y);
