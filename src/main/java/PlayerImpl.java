@@ -4,7 +4,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.Vector;
 
 public class PlayerImpl extends UnicastRemoteObject implements Player, Serializable {
-    private String name;
+    private final String name;
     public State state;
     private Vector<Player> players;
     private PlayerType playerType;
@@ -27,19 +27,19 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         // while slow, only THIS player experiences the slowness.
         for (Player player: players) {
             try {
-                this.state = player.register(this);
+                this.state = player.register(this, name);
                 break;
             } catch (Exception e) {
-                continue;
+                System.out.println(e.getMessage());
             }
         }
 
         if (this.state == null) {
             // this is primary - need to initialise State
             this.state = new State(name, bs.N, bs.K);
+            startBackgroundPing();
         }
 
-        // determine player type
         switch (state.players.size()) {
             case 1:
                 this.playerType = PlayerType.Primary;
@@ -51,7 +51,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 this.playerType = PlayerType.Normal;
         }
 
-        System.out.println(this + " is a " + playerType);
+        System.out.println(name + " is a " + playerType);
     }
 
     // ping does nothing. if its not contactable, remote exception is thrown
@@ -64,11 +64,12 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     }
 
     @Override
-    public void push(State latest) throws Exception {
+    public void push(State latest, Vector<Player> players) throws Exception {
         switch (playerType) {
             case Backup:
                 // TODO write-lock
                 this.state = latest;
+                this.players = players;
                 break;
             case Normal:
                 // normal player receiving a push means THIS player is now backup
@@ -82,17 +83,20 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     }
 
     @Override
-    public State register(Player p) throws Exception {
+    public State register(Player p, String caller) throws Exception {
         if (p.getName().equals(name)) {
             throw new Exception("cannot register with self");
         }
+
         if (playerType != PlayerType.Primary) {
             System.out.println("cant reg with me, im " + name + " " + this + ", im a " + playerType);
             throw new Exception("not primary");
         }
 
+        players.addElement(p); // add reference to primary server's list of player references
+
         // TODO lock state when adding player
-        state.addPlayer(p.getName());
+        state.addPlayer(caller);
 
         return state;
     }
@@ -148,7 +152,6 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         // sends a leave call to the primary
     }
 
-    // TODO not implemented
     public void sendMove(Move move) {
         if (this.playerType == PlayerType.Primary) {
             // just update own game state, you're the boss here
@@ -166,15 +169,12 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 break;
             } catch (Exception e) {
                 System.out.println(e.getMessage());
-                continue;
             }
         }
 
         state.pretty();
-        System.out.println("DONE");
-    };
+    }
 
-    // TODO not implemented
     public void refreshState() {
         if (playerType == PlayerType.Primary) {
             System.out.print("nothing to refresh");
@@ -185,19 +185,26 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 this.state = player.get(name);
                 break;
             } catch (Exception e) {
-                continue;
+                System.out.println(e.getMessage());
             }
         }
-    };
+    }
 
     /**
      * startBackgroundPing starts a thread that pings other servers
      * See https://stackoverflow.com/questions/12551514/create-threads-in-java-to-run-in-background
      */
     private void startBackgroundPing() {
-        Runnable r = new Runnable() {
-            public void run() {
-                // TODO ping and recovery actions here
+        Runnable r = () -> {
+            // TODO ping and recovery actions here
+            for (Player p: players) {
+                try {
+                    p.ping();
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                    // handle error since it means someone died
+                }
+
             }
         };
 

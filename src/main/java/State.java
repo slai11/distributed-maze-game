@@ -13,8 +13,8 @@ public class State implements Serializable {
     public Vector<Position> treasures;
 
     private int count;
-    private int N;
-    private int K;
+    private final int N;
+    private final int K;
 
     // TODO function to render state in GUI
 
@@ -22,10 +22,9 @@ public class State implements Serializable {
         count = 0;
         this.N = n;
         this.K = k;
-        this.treasures = new Vector<Position>();
-        this.players = new Vector<PlayerInfo>();
+        this.treasures = new Vector<>();
+        this.players = new Vector<>();
 
-        Random random = new Random();
         // assign primary to game state
         players.addElement(new PlayerInfo(randomPosition(), name));
 

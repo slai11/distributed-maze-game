@@ -8,20 +8,18 @@ import java.util.Vector;
 public class Tracker implements TrackerRMI {
     // players here should not have game state, just player info
     private Vector<Player> players;
-    private Registry registry;
     private int port;
-    private int N;
-    private int K;
+    private final int N;
+    private final int K;
 
     public Tracker(int port, int N, int K) {
         this.port = port;
-        this.players = new Vector<Player>();
+        this.players = new Vector<>();
         this.N = N;
         this.K = K;
 
         try {
             System.out.println("Tracker's IP Host Address: " + InetAddress.getLocalHost().getHostAddress());
-            registry = LocateRegistry.getRegistry(port);
         } catch (Exception e) {
             System.out.println("Error");
         }
@@ -38,14 +36,14 @@ public class Tracker implements TrackerRMI {
     public void unregister(String name) throws RemoteException {
         int i;
         for (i = 0; i < players.size(); i++) {
-            if (players.get(i).getName() == name) {
+            if (players.get(i).getName().equals(name)) {
                 break;
             }
         }
         players.remove(i);
     }
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         if(args.length != 3) {
             System.out.println("Wrong number of parameters...exiting");
             System.exit(0);

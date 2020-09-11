@@ -1,5 +1,6 @@
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.Vector;
 
 /**
  * Player is the remote object that encapsulates
@@ -8,12 +9,18 @@ import java.rmi.RemoteException;
  */
 public interface Player extends Remote {
     // server behaviour
-    void push(State latest) throws RemoteException, Exception;
+    void push(State latest, Vector<Player> players) throws RemoteException, Exception;
 
     void ping() throws RemoteException;
 
     // standard player behaviour
-    State register(Player p) throws RemoteException, Exception;
+
+    /**
+     * register is processed only by the primary server. It adds the player reference to its own vector
+     * of players.
+     * It also generates a player on the grid with the name as reference point.
+     */
+    State register(Player p, String caller) throws RemoteException, Exception;
 
     State move(Move move, String caller) throws RemoteException, Exception;
 
