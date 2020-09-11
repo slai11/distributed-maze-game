@@ -24,3 +24,22 @@ java Tracker 2001 15 10
 ```
 java Game 127.0.0.1 2001 ab
 ```
+
+
+### To run with gradle
+1. compile
+```
+./gradlew clean build 
+
+```
+
+2. Start rmiregistry & Run tracker
+```
+./gradlew -q --console=plain runTracker
+```
+
+3. Run game
+```
+./gradlew runGame --args='127.0.0.1 2001 ab'
+
+```
