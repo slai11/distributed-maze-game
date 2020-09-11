@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.rmi.registry.LocateRegistry;
 import java.util.Scanner;
 
@@ -27,6 +28,16 @@ public class Game {
 
         System.out.println("Bootstrapped and ready to go");
 
+        // GUI phase
+        JFrame frame = new JFrame();
+        frame.setTitle("Player "+id);
+        frame.setSize(800, 400);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+        frame.setResizable(false);
+        JPanel panel = playerRef.getPanel();
+        frame.getContentPane().add(panel);
+
         // Input phase
         Scanner s = new Scanner(System.in);
         char c = s.next().charAt(0);
@@ -48,8 +59,7 @@ public class Game {
                     playerRef.sendMove(Move.Up); // north
                     break;
             }
-            // TODO update game GUI
-
+            panel.repaint();
             c = s.next().charAt(0);
         }
 

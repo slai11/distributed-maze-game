@@ -1,3 +1,4 @@
+import java.awt.*;
 import java.io.Serializable;
 import java.util.Random;
 import java.util.Vector;
@@ -140,5 +141,21 @@ public class State implements Serializable {
         }
 
         return new Position(x, y);
+    }
+
+    public void draw(Graphics g, int spacing, int cellSize, int offset) {
+        int i = 0;
+        for (PlayerInfo playerInfo: players) {
+            playerInfo.draw(g, spacing, cellSize, offset, i);
+            i++;
+        }
+
+        for (Position treasure: treasures) {
+            treasure.draw(g, spacing, cellSize, offset);
+        }
+    }
+
+    public int getN() {
+        return this.N;
     }
 }

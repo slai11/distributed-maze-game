@@ -1,3 +1,5 @@
+import javax.swing.*;
+import java.awt.*;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -211,5 +213,24 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         };
 
         new Thread(r).start();
+    }
+    public JPanel getPanel() {
+        return new Maze();
+    }
+    public class Maze extends JPanel {
+        public int spacing = 5;
+        private int grid = 400;
+        public void paintComponent(Graphics g) {
+            g.setColor(Color.DARK_GRAY);
+            g.fillRect(grid,0, grid, grid);
+            g.setColor(Color.gray);
+            int cellSize = Math.round(grid/state.getN());
+            for(int i = 0; i < state.getN(); i++) {
+                for(int j = 0; j < state.getN(); j++) {
+                    g.fillRect(grid + spacing+i*cellSize, spacing+j*cellSize, cellSize-2*spacing, cellSize-2*spacing );
+                }
+            }
+            state.draw(g ,spacing ,cellSize, grid);
+        }
     }
 }
