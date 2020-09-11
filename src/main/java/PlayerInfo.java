@@ -17,7 +17,7 @@ public class PlayerInfo implements Serializable {
         Font f = new Font("Arial", Font.BOLD, cellSize/2);
         g.setFont(f);
         g.setColor(Color.black);
-        g.drawString(name,  offset + pos.x * cellSize + cellSize/4, pos.y * cellSize - cellSize/2 + spacing);
+        g.drawString(name,  offset + pos.x * cellSize + cellSize/4, (pos.y+1) * cellSize - spacing);
 
         // Draw player's name
         g.drawString(name, cellSize, (i+1) * cellSize);
@@ -27,11 +27,11 @@ public class PlayerInfo implements Serializable {
         g.drawString(Integer.toString(score), cellSize * 2, (i+1) * cellSize);
 
         // Draw whether the player is server or not
-        if (i == 1) {
+        if (i == 0) {
             g.setColor(Color.RED);
             g.drawString("Primary Server", cellSize * 3, (i+1) * cellSize);
         }
-        if (i == 2) {
+        if (i == 1) {
             g.setColor(Color.RED);
             g.drawString("Backup Server", cellSize * 3, (i+1) * cellSize);
         }

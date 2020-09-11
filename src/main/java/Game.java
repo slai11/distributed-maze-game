@@ -31,7 +31,7 @@ public class Game {
         // GUI phase
         JFrame frame = new JFrame();
         frame.setTitle("Player "+id);
-        frame.setSize(800, 400);
+        frame.setSize(750, 400);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
         frame.setResizable(false);
