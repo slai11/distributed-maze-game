@@ -33,10 +33,10 @@ public class Game {
         frame.setTitle("Player "+id);
         frame.setSize(750, 400);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setVisible(true);
         frame.setResizable(false);
         JPanel panel = playerRef.getPanel();
         frame.getContentPane().add(panel);
+        frame.setVisible(true);
 
         // Input phase
         Scanner s = new Scanner(System.in);
