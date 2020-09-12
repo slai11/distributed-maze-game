@@ -4,6 +4,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.registry.Registry;
 import java.util.Vector;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Tracker implements TrackerRMI {
     // players here should not have game state, just player info
@@ -11,6 +12,8 @@ public class Tracker implements TrackerRMI {
     private int port;
     private final int N;
     private final int K;
+
+    private ReentrantLock lock = new ReentrantLock();
 
     public Tracker(int port, int N, int K) {
         this.port = port;
@@ -28,19 +31,30 @@ public class Tracker implements TrackerRMI {
     @Override
     public Bootstrap register(Player player) {
         System.out.println("new player registering!");
-        players.addElement(player);
-        return new Bootstrap(players, N, K);
+        try {
+            lock.lock();
+            players.addElement(player);
+            return new Bootstrap(players, N, K);
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
     public void unregister(String name) throws RemoteException {
-        int i;
-        for (i = 0; i < players.size(); i++) {
-            if (players.get(i).getName().equals(name)) {
-                break;
+        try {
+            int i;
+            for (i = 0; i < players.size(); i++) {
+                if (players.get(i).getName().equals(name)) {
+                    break;
+                }
             }
+
+            lock.lock();
+            players.remove(i);
+        } finally {
+            lock.unlock();
         }
-        players.remove(i);
     }
 
     public static void main(String[] args) {
