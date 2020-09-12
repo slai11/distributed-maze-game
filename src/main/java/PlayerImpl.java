@@ -3,13 +3,20 @@ import java.awt.*;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Vector;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 
 public class PlayerImpl extends UnicastRemoteObject implements Player, Serializable {
     private final String name;
     public State state;
     private Vector<Player> players;
     private PlayerType playerType;
+
+    private ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
     public PlayerImpl(String name) throws RemoteException {
         super();
@@ -67,22 +74,21 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
     @Override
     public void push(State latest, Vector<Player> players) throws Exception {
-        switch (playerType) {
-            case Backup:
-                // TODO write-lock
-                this.state = latest;
-                this.players = players;
-                break;
-            case Normal:
-                // normal player receiving a push means THIS player is now backup
-                playerType = PlayerType.Backup;
+        if (playerType == PlayerType.Primary) {
+            throw new Exception("why push to me?");
+        }
 
-                // TODO write-lock
-                this.state = latest;
-                this.players = players;
-                break;
-            default:
-                throw new Exception("why push to me?");
+        if (playerType == PlayerType.Normal) {
+            // normal player receiving a push means THIS player is now backup
+            playerType = PlayerType.Backup;
+        }
+
+        try {
+            rwLock.writeLock().lock();
+            this.state = latest;
+            this.players = players;
+        } finally {
+            rwLock.writeLock().unlock();
         }
     }
 
@@ -97,12 +103,14 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             throw new Exception("not primary");
         }
 
-        players.addElement(p); // add reference to primary server's list of player references
-
-        // TODO lock state when adding player
-        state.addPlayer(caller);
-
-        return state;
+        try {
+            rwLock.writeLock().lock();
+            players.addElement(p); // add reference to primary server's list of player references
+            state.addPlayer(caller);
+            return state;
+        } finally {
+            rwLock.writeLock().unlock();
+        }
     }
 
     @Override
@@ -115,11 +123,20 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             throw new Exception("cannot query from self");
         }
 
+        Instant start = Instant.now();
+
         System.out.println(caller + " asked to make " + move);
 
-        state.move(move, caller);
+        try {
+            rwLock.writeLock().lock();
+            state.move(move, caller);
+            Duration timeElapsed = Duration.between(start, Instant.now());
+            System.out.println("Time taken for 1 write: "+ (timeElapsed.toNanos()) +" ns");
 
-        return this.state;
+            return this.state;
+        } finally {
+            rwLock.writeLock().unlock();
+        }
     }
 
     @Override
@@ -132,8 +149,12 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             throw new Exception("cannot query from self");
         }
 
-        // TODO must read-lock
-        return state;
+        try {
+            rwLock.readLock().lock();
+            return this.state;
+        } finally {
+            rwLock.readLock().unlock();
+        }
     }
 
     @Override
