@@ -59,7 +59,7 @@ public class Tracker implements TrackerRMI {
         try {
             Tracker t = new Tracker(port, n, k);
             stub = (TrackerRMI) UnicastRemoteObject.exportObject(t, 0);
-            registry = LocateRegistry.getRegistry(port);
+            registry = LocateRegistry.createRegistry(port);
             registry.bind("TrackerRMI", stub);
 
             System.out.println("Tracker Ready");
