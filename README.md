@@ -36,7 +36,9 @@ Requirement:
 
 ```
 
-2. Start rmiregistry & Run tracker
+2. Start rmiregistry at port 2001
+
+3. Run tracker
 ```
 ./gradlew -q --console=plain runTracker
 ```
