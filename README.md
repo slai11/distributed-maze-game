@@ -2,27 +2,40 @@
 CS5223 Distributed Systems Assignment 1
 
 
-### 1. Compilation
+### Set up
+1. Compile maze game
 ```
 cd src/main/java
 javac Tracker.java
 javac Game.java
 ```
 
-### Launch
-1. Start rmiregistry
+2. Start rmiregistry
 ```
 start rmiregistry 2001 &
 ```
 
-2. Run tracker
+3. Run tracker
 ```
 java Tracker 2001 15 10
 ```
 
-3. Run game
+
+### Launch game
+1. Run the game with a 2-character name, e.g. `ab`.
 ```
 java Game 127.0.0.1 2001 ab
+```
+
+### Stress testing
+1. Compile stress test
+```
+javac StressTest.java
+```
+
+2. Run stress test
+```
+java StressTest 127.0.0.1 2001 "java Game"
 ```
 
 
