@@ -1,9 +1,10 @@
 plugins {
     id 'java'
-    id 'org.openjfx.javafxplugin' version '0.0.8'
+    id 'org.openjfx.javafxplugin' version '0.0.8'   // Comment this out if using java-8
     id 'application'
 }
 
+// Comment below out if using java-8
 javafx {
     version = "11.0.2"
     modules = [ 'javafx.controls' ]
@@ -14,6 +15,7 @@ mainClassName = 'Tracker'
 group 'org.example'
 version '1.0-SNAPSHOT'
 
+// Comment below out if using java-8
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 

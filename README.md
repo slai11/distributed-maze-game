@@ -27,9 +27,12 @@ java Game 127.0.0.1 2001 ab
 
 
 ### To run with gradle
+Requirement:
+- Java 11
+
 1. compile
 ```
-./gradlew clean build 
+./gradlew clean build
 
 ```
 
