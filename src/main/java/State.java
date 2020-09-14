@@ -12,22 +12,22 @@ public class State implements Serializable {
     // index 0 is primary, index 1 is backup - when rendering on GUI
     public Vector<PlayerInfo> players;
     public Vector<Position> treasures;
+    public Vector<Player> playerRefs;
 
     private int count;
     private final int N;
     private final int K;
 
-    // TODO function to render state in GUI
-
-    public State(String name, int n, int k) {
+    public State(Player ref, String name, int n, int k) {
         count = 0;
         this.N = n;
         this.K = k;
         this.treasures = new Vector<>();
         this.players = new Vector<>();
+        this.playerRefs = new Vector<>();
 
         // assign primary to game state
-        players.addElement(new PlayerInfo(randomPosition(), name));
+        this.addPlayer(ref, name);
 
         // randomly generate k treasures
         for(int j = 0; j < K; ++j) {
@@ -47,7 +47,8 @@ public class State implements Serializable {
         }
     }
 
-    public void addPlayer(String name) {
+    public void addPlayer(Player ref, String name) {
+        playerRefs.addElement(ref);
         players.add(new PlayerInfo(randomPosition(), name));
     }
 

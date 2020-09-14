@@ -9,7 +9,7 @@ import java.util.Vector;
  */
 public interface Player extends Remote {
     // server behaviour
-    void push(State latest, Vector<Player> players) throws RemoteException, Exception;
+    void push(State latest) throws RemoteException, Exception;
 
     void ping() throws RemoteException;
 
@@ -28,5 +28,6 @@ public interface Player extends Remote {
 
     void leave(String leaver) throws RemoteException, Exception;
 
+    // TODO remove this. tracker does not need to call player since it should just get the vector of ref from primary
     String getName() throws RemoteException;
 }
