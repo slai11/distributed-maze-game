@@ -6,16 +6,21 @@ import java.rmi.server.UnicastRemoteObject;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Vector;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 public class PlayerImpl extends UnicastRemoteObject implements Player, Serializable {
-    private final String name;
     public State state;
-    private PlayerType playerType;
 
+    private final String name;
+    private PlayerType playerType;
     private ReadWriteLock rwLock = new ReentrantReadWriteLock();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public PlayerImpl(String name) throws RemoteException {
         super();
@@ -43,7 +48,6 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         if (this.state == null) {
             // this is primary - need to initialise State
             this.state = new State(this, name, bs.N, bs.K);
-            startBackgroundPing();
         }
 
         switch (state.players.size()) {
@@ -58,6 +62,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
 
         System.out.println(name + " is a " + playerType);
+        startBackgroundPing();
     }
 
     // ping does nothing. if its not contactable, remote exception is thrown
@@ -81,6 +86,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
 
         try {
+            System.out.println("Received state " + latest.count);
             rwLock.writeLock().lock();
             this.state = latest;
         } finally {
@@ -95,7 +101,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
 
         if (playerType != PlayerType.Primary) {
-            System.out.println("cant reg with me, im " + name + " " + this + ", im a " + playerType);
+            System.out.println("can't reg with me, im " + name + " " + this + ", im a " + playerType);
             throw new Exception("not primary");
         }
 
@@ -154,23 +160,28 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     }
 
     @Override
-    public void leave(String leaver) throws Exception {
+    public State leave(String leaver) throws Exception {
         if (playerType != PlayerType.Primary) {
             throw new Exception("not primary");
         }
 
+        System.out.println("Removing " + leaver);
+
         try {
-            rwLock.readLock().lock();
+            rwLock.writeLock().lock();
             int i;
             for (i = 0; i < state.players.size(); i++) {
-                if (state.players.get(i).name.equals(name)) {
+                if (state.players.get(i).name.equals(leaver)) {
                     break;
                 }
             }
             state.players.remove(i);
+            state.playerRefs.remove(i);
             pushToBackup();
+            System.out.println("Removed" + leaver);
+            return this.state;
         } finally {
-            rwLock.readLock().unlock();
+            rwLock.writeLock().unlock();
         }
     }
 
@@ -183,19 +194,29 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         if (this.playerType == PlayerType.Primary) {
             // just update own game state, you're the boss here
             System.out.println("im the primary so i change my own state");
-            state.move(move, name);
+            try {
+                rwLock.writeLock().lock();
+                state.move(move, name);
+            } finally {
+                rwLock.writeLock().unlock();
+            }
+
             state.pretty();
             return;
         }
 
-        // send move to primary
         for (Player player: state.playerRefs) {
             try {
-                // non-server changes to game state does not need locking
-                state = player.move(move, name);
+                // needs to be assigned to a new variable to prevent deadlock if `this` is Backup
+                State newState = player.move(move, name);
+
+                rwLock.writeLock().lock();
+                state = newState;
                 break;
             } catch (Exception e) {
                 System.out.println(e.getMessage());
+            } finally {
+                rwLock.writeLock().unlock();
             }
         }
 
@@ -203,17 +224,20 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     }
 
     public void refreshState() {
-        if (playerType == PlayerType.Primary) {
+        if (playerType == PlayerType.Primary || playerType == PlayerType.Backup) {
             System.out.print("nothing to refresh");
             return;
         }
 
         for (Player player: state.playerRefs) {
             try {
+                rwLock.writeLock().lock();
                 this.state = player.get(name);
                 break;
             } catch (Exception e) {
                 System.out.println(e.getMessage());
+            } finally {
+                rwLock.writeLock().unlock();
             }
         }
     }
@@ -223,6 +247,8 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
      * @throws Exception
      */
     private void pushToBackup() throws Exception {
+        if (state.playerRefs.size() == 1) return;
+
         int i = 0;
         for (PlayerInfo player: state.players) {
             if (player.name == name) break;
@@ -243,19 +269,78 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
      */
     private void startBackgroundPing() {
         Runnable r = () -> {
-            // TODO ping and recovery actions here
-            for (Player p: state.playerRefs) {
-                try {
-                    p.ping();
-                } catch (Exception e) {
-                    System.out.println(e.getMessage());
-                    // handle error since it means someone died
+            int pos = 0;
+            for (int i = 0; i < state.players.size(); i++) {
+                if (state.players.get(i).name.equals(this.name)) {
+                    pos = i;
+                    break;
                 }
+            }
+            switch (playerType) {
+                case Primary:
+                    pingBackup(pos);
+                    break;
+                case Backup:
+                    pingPrimary(pos);
+                    pingNormal(pos);
+                    break;
+                case Normal:
+                    pingNormal(pos);
+                    break;
             }
         };
 
-        new Thread(r).start();
+        scheduler.scheduleAtFixedRate(r, 0, 500, TimeUnit.MILLISECONDS);
     }
+
+    private void reportCrash(String leaver) {
+        for (Player player: state.playerRefs) {
+            if (this.playerType == PlayerType.Backup) {
+                // backup should not lock when reporting a crash to primary
+                // since primary will push the updated state to backup.
+                try {
+                    player.leave(leaver);
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                }
+            } else {
+                try {
+                    rwLock.writeLock().lock();
+                    this.state = player.leave(leaver);
+                    break;
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                } finally {
+                    rwLock.writeLock().unlock();
+                }
+            }
+        }
+    }
+
+    private void pingBackup(int pos) {
+        // TODO
+    }
+
+    private void pingPrimary(int pos) {
+        // TODO
+    }
+
+    /**
+     * pingNormal pings the next player in game state's playerRef
+     */
+    private void pingNormal(int pos) {
+        // TODO might need read lock here but its complicated since reportCrash will need to mutate the state
+        try {
+            if (state.playerRefs.size() <= pos + 1) return;
+            state.playerRefs.get(pos + 1).ping();
+        } catch (RemoteException e) {
+            System.out.println("player at " + (pos+1) + " is gone!");
+            reportCrash(state.players.get(pos+1).name);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
     public JPanel getPanel() {
         return new Maze();
     }

@@ -26,7 +26,7 @@ public interface Player extends Remote {
 
     State get(String name) throws RemoteException, Exception;
 
-    void leave(String leaver) throws RemoteException, Exception;
+    State leave(String leaver) throws RemoteException, Exception;
 
     // TODO remove this. tracker does not need to call player since it should just get the vector of ref from primary
     String getName() throws RemoteException;

@@ -14,7 +14,7 @@ public class State implements Serializable {
     public Vector<Position> treasures;
     public Vector<Player> playerRefs;
 
-    private int count;
+    public int count;
     private final int N;
     private final int K;
 
