@@ -48,7 +48,7 @@ public class State implements Serializable {
     }
 
     public void addPlayer(Player ref, String name) {
-        playerRefs.addElement(ref);
+        playerRefs.add(ref);
         players.add(new PlayerInfo(randomPosition(), name));
     }
 
@@ -102,6 +102,17 @@ public class State implements Serializable {
         }
 
         System.out.println("invalid move");
+    }
+
+    public void removePlayer(String leaver) {
+        int i;
+        for (i = 0; i < players.size(); i++) {
+            if (players.get(i).name.equals(leaver)) {
+                break;
+            }
+        }
+        players.remove(i);
+        playerRefs.remove(i);
     }
 
     // isNewPositionValid checks if new position is out of bound and if any other player already occupies the spot.

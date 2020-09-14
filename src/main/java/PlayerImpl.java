@@ -5,10 +5,8 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Vector;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -169,14 +167,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
         try {
             rwLock.writeLock().lock();
-            int i;
-            for (i = 0; i < state.players.size(); i++) {
-                if (state.players.get(i).name.equals(leaver)) {
-                    break;
-                }
-            }
-            state.players.remove(i);
-            state.playerRefs.remove(i);
+            state.removePlayer(leaver);
             pushToBackup();
             System.out.println("Removed" + leaver);
             return this.state;
@@ -185,9 +176,26 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
     }
 
-    // TODO not implemented
     public void quit() {
+        // TODO handle primary
+        if (playerType == PlayerType.Primary) {
+            return;
+        }
+
+        // TODO handle backup
+        if (playerType == PlayerType.Backup) {
+            return;
+        }
+
         // sends a leave call to the primary
+        for (Player player: state.playerRefs) {
+            try {
+                player.leave(name);
+                break;
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+        }
     }
 
     public void sendMove(Move move) {
@@ -251,7 +259,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
         int i = 0;
         for (PlayerInfo player: state.players) {
-            if (player.name == name) break;
+            if (player.name.equals(name)) break;
             i++;
         }
 
