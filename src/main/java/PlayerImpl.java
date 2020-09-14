@@ -203,6 +203,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     public void refreshState() {
         if (playerType == PlayerType.Primary) {
             System.out.print("nothing to refresh");
+            return;
         }
 
         for (Player player: players) {
