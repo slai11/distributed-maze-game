@@ -104,6 +104,17 @@ public class State implements Serializable {
         System.out.println("invalid move");
     }
 
+    public void removePlayer(String leaver) {
+        int i;
+        for (i = 0; i < players.size(); i++) {
+            if (players.get(i).name.equals(leaver)) {
+                break;
+            }
+        }
+        players.remove(i);
+        playerRefs.remove(i);
+    }
+
     // isNewPositionValid checks if new position is out of bound and if any other player already occupies the spot.
     private boolean isNewPositionValid(Position pos) {
         if (pos.x < 0 || pos.x >= N || pos.y < 0 || pos.y >= N) {

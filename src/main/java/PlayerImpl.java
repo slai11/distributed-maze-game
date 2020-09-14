@@ -161,22 +161,33 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
         try {
             rwLock.readLock().lock();
-            int i;
-            for (i = 0; i < state.players.size(); i++) {
-                if (state.players.get(i).name.equals(name)) {
-                    break;
-                }
-            }
-            state.players.remove(i);
+            state.removePlayer(leaver);
             pushToBackup();
         } finally {
             rwLock.readLock().unlock();
         }
     }
 
-    // TODO not implemented
     public void quit() {
+        // TODO handle primary
+        if (playerType == PlayerType.Primary) {
+            return;
+        }
+
+        // TODO handle backup
+        if (playerType == PlayerType.Backup) {
+            return;
+        }
+
         // sends a leave call to the primary
+        for (Player player: state.playerRefs) {
+            try {
+                player.leave(name);
+                break;
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+        }
     }
 
     public void sendMove(Move move) {
