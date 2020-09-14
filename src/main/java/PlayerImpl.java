@@ -13,7 +13,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class PlayerImpl extends UnicastRemoteObject implements Player, Serializable {
     private final String name;
     public State state;
-    private Vector<Player> players;
     private PlayerType playerType;
 
     private ReadWriteLock rwLock = new ReentrantReadWriteLock();
@@ -28,13 +27,11 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
      * @param bs
      */
     public void bootstrap(Bootstrap bs) {
-        this.players = bs.players;
-
         // iterate over player list to register with primary
         // since players contact tracker for (1) first joining and (2) crash recovery
         // the primary could have left. Iterating over player list is the safest method.
         // while slow, only THIS player experiences the slowness.
-        for (Player player: players) {
+        for (Player player: bs.players) {
             try {
                 this.state = player.register(this, name);
                 break;
@@ -45,7 +42,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
         if (this.state == null) {
             // this is primary - need to initialise State
-            this.state = new State(name, bs.N, bs.K);
+            this.state = new State(this, name, bs.N, bs.K);
             startBackgroundPing();
         }
 
@@ -73,7 +70,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     }
 
     @Override
-    public void push(State latest, Vector<Player> players) throws Exception {
+    public void push(State latest) throws Exception {
         if (playerType == PlayerType.Primary) {
             throw new Exception("why push to me?");
         }
@@ -86,7 +83,6 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         try {
             rwLock.writeLock().lock();
             this.state = latest;
-            this.players = players;
         } finally {
             rwLock.writeLock().unlock();
         }
@@ -94,7 +90,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
     @Override
     public State register(Player p, String caller) throws Exception {
-        if (p.getName().equals(name)) {
+        if (caller.equals(name)) {
             throw new Exception("cannot register with self");
         }
 
@@ -105,8 +101,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
         try {
             rwLock.writeLock().lock();
-            players.addElement(p); // add reference to primary server's list of player references
-            state.addPlayer(caller);
+            state.addPlayer(p, caller);
             return state;
         } finally {
             rwLock.writeLock().unlock();
@@ -163,13 +158,18 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             throw new Exception("not primary");
         }
 
-        int i;
-        for (i = 0; i < state.players.size(); i++) {
-            if (state.players.get(i).name.equals(name)) {
-                break;
+        try {
+            rwLock.readLock().lock();
+            int i;
+            for (i = 0; i < state.players.size(); i++) {
+                if (state.players.get(i).name.equals(name)) {
+                    break;
+                }
             }
+            state.players.remove(i);
+        } finally {
+            rwLock.readLock().unlock();
         }
-        state.players.remove(i);
     }
 
     // TODO not implemented
@@ -187,7 +187,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
 
         // send move to primary
-        for (Player player: players) {
+        for (Player player: state.playerRefs) {
             try {
                 // non-server changes to game state does not need locking
                 state = player.move(move, name);
@@ -206,7 +206,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             return;
         }
 
-        for (Player player: players) {
+        for (Player player: state.playerRefs) {
             try {
                 this.state = player.get(name);
                 break;
@@ -223,14 +223,13 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     private void startBackgroundPing() {
         Runnable r = () -> {
             // TODO ping and recovery actions here
-            for (Player p: players) {
+            for (Player p: state.playerRefs) {
                 try {
                     p.ping();
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
                     // handle error since it means someone died
                 }
-
             }
         };
 
