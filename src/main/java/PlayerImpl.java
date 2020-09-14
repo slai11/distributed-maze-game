@@ -200,7 +200,6 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
     public void sendMove(Move move) {
         if (this.playerType == PlayerType.Primary) {
-            // just update own game state, you're the boss here
             System.out.println("im the primary so i change my own state");
             try {
                 rwLock.writeLock().lock();
@@ -308,13 +307,14 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 // since primary will push the updated state to backup.
                 try {
                     player.leave(leaver);
+                    break;
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
                 }
             } else {
                 try {
                     rwLock.writeLock().lock();
-                    this.state = player.leave(leaver);
+                    this.state = player.leave(leaver); // assignment is required else player may encounter out-of-bound errors
                     break;
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
