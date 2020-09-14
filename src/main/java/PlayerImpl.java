@@ -72,7 +72,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     @Override
     public void push(State latest) throws Exception {
         if (playerType == PlayerType.Primary) {
-            throw new Exception("why push to me?");
+            throw new Exception("cannot push to primary");
         }
 
         if (playerType == PlayerType.Normal) {
@@ -102,6 +102,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         try {
             rwLock.writeLock().lock();
             state.addPlayer(p, caller);
+            pushToBackup();
             return state;
         } finally {
             rwLock.writeLock().unlock();
@@ -127,7 +128,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             state.move(move, caller);
             Duration timeElapsed = Duration.between(start, Instant.now());
             System.out.println("Time taken for 1 write: "+ (timeElapsed.toNanos()) +" ns");
-
+            pushToBackup();
             return this.state;
         } finally {
             rwLock.writeLock().unlock();
@@ -167,6 +168,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 }
             }
             state.players.remove(i);
+            pushToBackup();
         } finally {
             rwLock.readLock().unlock();
         }
@@ -214,6 +216,25 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 System.out.println(e.getMessage());
             }
         }
+    }
+
+    /**
+     * pushToBackup should occur on EVERY write to state
+     * @throws Exception
+     */
+    private void pushToBackup() throws Exception {
+        int i = 0;
+        for (PlayerInfo player: state.players) {
+            if (player.name == name) break;
+            i++;
+        }
+
+        if (state.playerRefs.size() < i + 1) {
+            // no backup. some grave mistake has happened
+            throw new Exception("no backup can be found!");
+        }
+
+        state.playerRefs.get(i+1).push(state);
     }
 
     /**
