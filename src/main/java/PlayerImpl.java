@@ -353,7 +353,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             if (state.playerRefs.size() <= pos + 1) return;
             state.playerRefs.get(pos + 1).ping();
         } catch (RemoteException e) {
-            System.out.println("primary server at " + (pos+1) + " is gone!");
+            System.out.println("backup server at " + (pos+1) + " is gone!");
             handleBackupCrash(pos);
         } catch (Exception e) {
             System.out.println(e.getMessage());
