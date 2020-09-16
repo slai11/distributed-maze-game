@@ -1,6 +1,5 @@
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.Vector;
 
 /**
  * Player is the remote object that encapsulates
@@ -30,4 +29,6 @@ public interface Player extends Remote {
 
     // TODO remove this. tracker does not need to call player since it should just get the vector of ref from primary
     String getName() throws RemoteException;
+
+    void setPrimary(int backupPosition, String name) throws Exception;
 }

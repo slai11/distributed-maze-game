@@ -176,9 +176,41 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
     }
 
+    public void setPrimary(int backupPosition, String leaver) throws Exception {
+        if (playerType != PlayerType.Backup) {
+            throw new Exception("not backup");
+        }
+
+        playerType = PlayerType.Primary;
+        Player normal = state.playerRefs.get(backupPosition+1);
+        try {
+            rwLock.writeLock().lock();
+            state = leave(leaver);    // do it last other will cause "no backup can be found!"
+            normal.push(state);
+        } catch (Exception e) {
+
+        } finally {
+            rwLock.writeLock().unlock();
+        }
+    }
+
+
     public void quit() {
         // TODO handle primary
         if (playerType == PlayerType.Primary) {
+            try {
+                int i;
+                for (i = 0; i < state.players.size(); i++) {
+                    if (state.players.get(i).name.equals(name)) {
+                        break;
+                    }
+                }
+                int backupPosition = i+1;
+                Player backup = state.playerRefs.get(backupPosition);
+                backup.setPrimary(backupPosition, name);
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
             return;
         }
 
