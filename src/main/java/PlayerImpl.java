@@ -325,12 +325,43 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
     }
 
-    private void pingBackup(int pos) {
-        // TODO
+    private void handleBackupCrash(int primaryPosition) {
+        // Step 1: remove backup
+        try {
+            rwLock.writeLock().lock();
+            state.removePlayer(state.players.get(primaryPosition+1).name);
+        } finally {
+            rwLock.writeLock().unlock();
+        }
+
+        // Step 2: appoint new backup
+        // 1 since if primary is i-th, backup is i+1 and new backup is i+2
+        // but old backup was removed, hence newbackup is i+1
+        // assume: Messages never get lost (under TCP and RMI) and message propagation delay is at most 0.2 second.
+        try {
+            rwLock.readLock().lock();
+            state.playerRefs.get(primaryPosition + 1).push(this.state);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        } finally {
+            rwLock.readLock().unlock();
+        }
     }
 
     private void pingPrimary(int pos) {
         // TODO
+    }
+
+    private void pingBackup(int pos) {
+        try {
+            if (state.playerRefs.size() <= pos + 1) return;
+            state.playerRefs.get(pos + 1).ping();
+        } catch (RemoteException e) {
+            System.out.println("backup server at " + (pos+1) + " is gone!");
+            handleBackupCrash(pos);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     /**
