@@ -182,13 +182,11 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
 
         playerType = PlayerType.Primary;
-        Player normal = state.playerRefs.get(backupPosition+1);
         try {
             rwLock.writeLock().lock();
-            state = leave(leaver);    // do it last other will cause "no backup can be found!"
-            normal.push(state);
+            leave(leaver);
         } catch (Exception e) {
-
+            System.out.println(e.getMessage());
         } finally {
             rwLock.writeLock().unlock();
         }
@@ -196,7 +194,6 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
 
     public void quit() {
-        // TODO handle primary
         if (playerType == PlayerType.Primary) {
             try {
                 int i;
