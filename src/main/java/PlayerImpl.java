@@ -211,11 +211,6 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             return;
         }
 
-        // TODO handle backup
-        if (playerType == PlayerType.Backup) {
-            return;
-        }
-
         // sends a leave call to the primary
         for (Player player: state.playerRefs) {
             try {
