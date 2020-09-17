@@ -348,8 +348,31 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
     }
 
-    private void pingPrimary(int pos) {
-        // TODO
+    private void handlePrimaryCrash(int backupPosition) {
+        // Step 1: become primary
+        this.playerType = PlayerType.Primary;
+
+        // Step 2: remove primary. can be after step 1 since other players will fail anyway
+        try {
+            rwLock.writeLock().lock();
+            state.removePlayer(state.players.get(backupPosition - 1).name);
+        } finally {
+            rwLock.writeLock().unlock();
+        }
+
+        // Step 3: appoint new backup
+        // note that this step might not be relevant since while handling primary crash, other players
+        // request to `this` would result a push to the next-in-line and automatically promote a new backup server
+        //
+        // assume: Messages never get lost (under TCP and RMI) and message propagation delay is at most 0.2 second.
+        try {
+            rwLock.readLock().lock();
+            state.playerRefs.get(backupPosition).push(this.state);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        } finally {
+            rwLock.readLock().unlock();
+        }
     }
 
     private void pingBackup(int pos) {
@@ -359,6 +382,17 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         } catch (RemoteException e) {
             System.out.println("backup server at " + (pos+1) + " is gone!");
             handleBackupCrash(pos);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private void pingPrimary(int pos) {
+        try {
+            state.playerRefs.get(pos - 1).ping();
+        } catch (RemoteException e) {
+            System.out.println("primary server at " + (pos+1) + " is gone!");
+            handlePrimaryCrash(pos);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
