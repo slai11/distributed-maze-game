@@ -14,7 +14,7 @@ public class State implements Serializable {
     public Vector<Position> treasures;
     public Vector<Player> playerRefs;
 
-    private int count;
+    public int count;
     private final int N;
     private final int K;
 
@@ -48,7 +48,7 @@ public class State implements Serializable {
     }
 
     public void addPlayer(Player ref, String name) {
-        playerRefs.addElement(ref);
+        playerRefs.add(ref);
         players.add(new PlayerInfo(randomPosition(), name));
     }
 
