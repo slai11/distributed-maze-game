@@ -348,6 +348,10 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
     }
 
+    private void pingPrimary(int pos) {
+        // TODO
+    }
+
     private void pingBackup(int pos) {
         try {
             if (state.playerRefs.size() <= pos + 1) return;
@@ -358,10 +362,6 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
-    }
-
-    private void pingPrimary(int pos) {
-        // TODO
     }
 
     /**
