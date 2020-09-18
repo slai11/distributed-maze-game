@@ -204,6 +204,8 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 }
                 int backupPosition = i+1;
                 Player backup = state.playerRefs.get(backupPosition);
+                playerType = PlayerType.Retiree;
+                Thread.sleep(10000);
                 backup.setPrimary(backupPosition, name);
             } catch (Exception e) {
                 System.out.println(e.getMessage());
