@@ -113,6 +113,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
     }
 
+    @Override
     public State shadowMove(Move move, String caller) throws Exception {
         // To enable other players to move while primary is retiring
         // player in action could still in backup or already be set to primary
@@ -199,6 +200,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
     }
 
+    @Override
     public void setPrimary(int backupPosition, String leaver) throws Exception {
         if (playerType != PlayerType.Backup) {
             throw new Exception("not backup");
