@@ -114,45 +114,24 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     }
 
     @Override
-    public State shadowMove(Move move, String caller) throws Exception {
-        // To enable other players to move while primary is retiring
-        // player in action could still in backup or already be set to primary
-        if (playerType == PlayerType.Backup || playerType == playerType.Primary) {
-            System.out.println("Shadowing in progress");
-            try {
-                rwLock.writeLock().lock();
-                state.move(move, caller);
-                if (playerType == playerType.Primary) {
-                    pushToBackup();
-                }
-                return this.state;
-            } finally {
-                rwLock.writeLock().unlock();
-            }
-        }
-        return null;
-    }
-
-    @Override
     public State move(Move move, String caller) throws Exception {
-        if (playerType == PlayerType.Retiree) {
-            throw new RetiringException("Im retiring");
-        }
-
-        if (playerType != PlayerType.Primary) {
-            throw new Exception("not primary");
-        }
-
-        if (caller.equals(name)) {
-            throw new Exception("cannot query from self");
-        }
-
         Instant start = Instant.now();
-
         System.out.println(caller + " asked to make " + move);
 
         try {
             rwLock.writeLock().lock();
+
+            // playertype check only done after lock acquisition
+            if (playerType == PlayerType.Retiree) {
+                throw new RetiringException("Im retiring");
+            }
+            if (playerType != PlayerType.Primary) {
+                throw new Exception("not primary");
+            }
+            if (caller.equals(name)) {
+                throw new Exception("cannot query from self");
+            }
+
             state.move(move, caller);
             Duration timeElapsed = Duration.between(start, Instant.now());
             System.out.println("Time taken for 1 write: "+ (timeElapsed.toNanos()) +" ns");
@@ -221,6 +200,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     public void quit() {
         if (playerType == PlayerType.Primary) {
             try {
+                rwLock.writeLock().lock();
                 int i;
                 for (i = 0; i < state.players.size(); i++) {
                     if (state.players.get(i).name.equals(name)) {
@@ -233,6 +213,8 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 backup.setPrimary(backupPosition, name);
             } catch (Exception e) {
                 System.out.println(e.getMessage());
+            } finally {
+                rwLock.writeLock().unlock();
             }
             return;
         }
@@ -262,42 +244,16 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             return;
         }
 
-        int i = 0;
-        for (Player player : state.playerRefs) {
-            State newState = null;
+        for (Player player: state.playerRefs) {
             try {
-                // increment at the beginning of loop. Need to -1 to get the correct position.
-                i += 1;
                 // needs to be assigned to a new variable to prevent deadlock if `this` is Backup
-                newState = player.move(move, name);
-            } catch (RetiringException e) {
-                System.out.println("Retiring Exception triggered");
-                try {
-                    rwLock.writeLock().lock();
-                    if (playerType == PlayerType.Backup) {
-                        System.out.println("I am backup server");
-                        state = shadowMove(move, name);
-                    } else {
-                        System.out.println("I am normal player");
-                        Player backup = state.playerRefs.get(i);
-                        state = backup.shadowMove(move, name);
-                    }
-                } catch (Exception e1) {
-                    System.out.println("Something wrong when primary quit");
-                    System.out.println(e1.getMessage());
-                } finally {
-                    rwLock.writeLock().unlock();
-                }
-                break;
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-                continue;
-            }
+                State newState = player.move(move, name);
 
-            try {
                 rwLock.writeLock().lock();
                 state = newState;
                 break;
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
             } finally {
                 rwLock.writeLock().unlock();
             }

@@ -31,6 +31,4 @@ public interface Player extends Remote {
     String getName() throws RemoteException;
 
     void setPrimary(int backupPosition, String name) throws Exception;
-
-    State shadowMove(Move move, String caller) throws RemoteException, Exception;
 }
