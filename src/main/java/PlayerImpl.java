@@ -113,8 +113,31 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
     }
 
+    public State shadowMove(Move move, String caller) throws Exception {
+        // To enable other players to move while primary is retiring
+        // player in action could still in backup or already be set to primary
+        if (playerType == PlayerType.Backup || playerType == playerType.Primary) {
+            System.out.println("Shadowing in progress");
+            try {
+                rwLock.writeLock().lock();
+                state.move(move, caller);
+                if (playerType == playerType.Primary) {
+                    pushToBackup();
+                }
+                return this.state;
+            } finally {
+                rwLock.writeLock().unlock();
+            }
+        }
+        return null;
+    }
+
     @Override
     public State move(Move move, String caller) throws Exception {
+        if (playerType == PlayerType.Retiree) {
+            throw new RetiringException("Im retiring");
+        }
+
         if (playerType != PlayerType.Primary) {
             throw new Exception("not primary");
         }
@@ -205,7 +228,6 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 int backupPosition = i+1;
                 Player backup = state.playerRefs.get(backupPosition);
                 playerType = PlayerType.Retiree;
-                Thread.sleep(10000);
                 backup.setPrimary(backupPosition, name);
             } catch (Exception e) {
                 System.out.println(e.getMessage());
@@ -238,21 +260,46 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             return;
         }
 
-        for (Player player: state.playerRefs) {
+        int i = 0;
+        for (Player player : state.playerRefs) {
+            State newState = null;
             try {
+                // increment at the beginning of loop. Need to -1 to get the correct position.
+                i += 1;
                 // needs to be assigned to a new variable to prevent deadlock if `this` is Backup
-                State newState = player.move(move, name);
-
-                rwLock.writeLock().lock();
-                state = newState;
+                newState = player.move(move, name);
+            } catch (RetiringException e) {
+                System.out.println("Retiring Exception triggered");
+                try {
+                    rwLock.writeLock().lock();
+                    if (playerType == PlayerType.Backup) {
+                        System.out.println("I am backup server");
+                        state = shadowMove(move, name);
+                    } else {
+                        System.out.println("I am normal player");
+                        Player backup = state.playerRefs.get(i);
+                        state = backup.shadowMove(move, name);
+                    }
+                } catch (Exception e1) {
+                    System.out.println("Something wrong when primary quit");
+                    System.out.println(e1.getMessage());
+                } finally {
+                    rwLock.writeLock().unlock();
+                }
                 break;
             } catch (Exception e) {
                 System.out.println(e.getMessage());
+                continue;
+            }
+
+            try {
+                rwLock.writeLock().lock();
+                state = newState;
+                break;
             } finally {
                 rwLock.writeLock().unlock();
             }
         }
-
         state.pretty();
     }
 
