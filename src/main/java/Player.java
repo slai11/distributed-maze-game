@@ -30,7 +30,7 @@ public interface Player extends Remote {
     // TODO remove this. tracker does not need to call player since it should just get the vector of ref from primary
     String getName() throws RemoteException;
 
-    void setPrimary(int backupPosition, String name) throws Exception;
+    void setPrimary(String name) throws Exception;
 
     State shadowMove(Move move, String caller) throws RemoteException, Exception;
 }

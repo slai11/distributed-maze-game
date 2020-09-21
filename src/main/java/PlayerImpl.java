@@ -201,19 +201,16 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     }
 
     @Override
-    public void setPrimary(int backupPosition, String leaver) throws Exception {
+    public void setPrimary(String leaver) throws Exception {
         if (playerType != PlayerType.Backup) {
             throw new Exception("not backup");
         }
 
         playerType = PlayerType.Primary;
         try {
-            rwLock.writeLock().lock();
             leave(leaver);
         } catch (Exception e) {
             System.out.println(e.getMessage());
-        } finally {
-            rwLock.writeLock().unlock();
         }
     }
 
@@ -230,7 +227,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 int backupPosition = i+1;
                 Player backup = state.playerRefs.get(backupPosition);
                 playerType = PlayerType.Retiree;
-                backup.setPrimary(backupPosition, name);
+                backup.setPrimary(name);
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
