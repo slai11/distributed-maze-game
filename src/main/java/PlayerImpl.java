@@ -218,12 +218,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     public void quit() {
         if (playerType == PlayerType.Primary) {
             try {
-                int i;
-                for (i = 0; i < state.players.size(); i++) {
-                    if (state.players.get(i).name.equals(name)) {
-                        break;
-                    }
-                }
+                int i = getPlayerPos();
                 int backupPosition = i+1;
                 Player backup = state.playerRefs.get(backupPosition);
                 playerType = PlayerType.Retiree;
@@ -328,11 +323,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     private void pushToBackup() throws Exception {
         if (state.playerRefs.size() == 1) return;
 
-        int i = 0;
-        for (PlayerInfo player: state.players) {
-            if (player.name.equals(name)) break;
-            i++;
-        }
+        int i = getPlayerPos();
 
         if (state.playerRefs.size() < i + 1) {
             // no backup. some grave mistake has happened
@@ -342,19 +333,23 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         state.playerRefs.get(i+1).push(state);
     }
 
+    // getPlayerPos is a util function to find `this`'s index list of players
+    private int getPlayerPos() {
+        int i = 0;
+        for (PlayerInfo player: state.players) {
+            if (player.name.equals(name)) break;
+            i++;
+        }
+        return i;
+    }
+
     /**
      * startBackgroundPing starts a thread that pings other servers
      * See https://stackoverflow.com/questions/12551514/create-threads-in-java-to-run-in-background
      */
     private void startBackgroundPing() {
         Runnable r = () -> {
-            int pos = 0;
-            for (int i = 0; i < state.players.size(); i++) {
-                if (state.players.get(i).name.equals(this.name)) {
-                    pos = i;
-                    break;
-                }
-            }
+            int pos = getPlayerPos();
             switch (playerType) {
                 case Primary:
                     pingBackup(pos);
