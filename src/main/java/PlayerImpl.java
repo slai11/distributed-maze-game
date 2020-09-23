@@ -316,16 +316,16 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
      * @throws Exception
      */
     private void pushToBackup() throws Exception {
+        // do nothing if only primary
         if (state.playerRefs.size() == 1) return;
-
-        int i = getPlayerPos();
-
-        if (state.playerRefs.size() < i + 1) {
-            // no backup. some grave mistake has happened
-            throw new Exception("no backup can be found!");
+        try {
+            for (int i = 1; i < state.playerRefs.size(); i++) {
+                state.playerRefs.get(i).push(state);
+                break;
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
-
-        state.playerRefs.get(i+1).push(state);
     }
 
     // getPlayerPos is a util function to find `this`'s index list of players
