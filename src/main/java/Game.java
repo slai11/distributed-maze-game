@@ -1,7 +1,7 @@
 import javax.swing.*;
 import java.rmi.registry.LocateRegistry;
 import java.util.Scanner;
-
+import java.util.Random;
 /**
  * Game is the main function that handles user's input
  * it bootstraps start of the game from the tracker
@@ -24,16 +24,15 @@ public class Game {
         Bootstrap bs = trackerRMIRef.register(playerRef);
         playerRef.bootstrap(bs);
 
-        System.out.println(bs.players.size());
-
-        System.out.println("Bootstrapped and ready to go");
-
         // GUI phase
         JFrame frame = new JFrame();
         frame.setTitle("Player "+id);
         frame.setSize(750, 400);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(false);
+
+        Random random = new Random();
+        frame.setLocation(random.nextInt(500), random.nextInt(500));
         JPanel panel = playerRef.getPanel();
         frame.getContentPane().add(panel);
         frame.setVisible(true);

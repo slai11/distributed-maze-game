@@ -112,12 +112,12 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     public State shadowMove(Move move, String caller) throws Exception {
         // To enable other players to move while primary is retiring
         // player in action could still in backup or already be set to primary
-        if (playerType == PlayerType.Backup || playerType == playerType.Primary) {
+        if (playerType == PlayerType.Backup || playerType == PlayerType.Primary) {
             System.out.println("Shadowing in progress");
             try {
                 rwLock.writeLock().lock();
                 state.move(move, caller);
-                if (playerType == playerType.Primary) {
+                if (playerType == PlayerType.Primary) {
                     pushToBackup();
                 }
                 return this.state;
@@ -313,7 +313,6 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
     /**
      * pushToBackup should occur on EVERY write to state
-     * @throws Exception
      */
     private void pushToBackup() throws Exception {
         // do nothing if only primary
