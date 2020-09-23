@@ -388,25 +388,20 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     }
 
     private void handleBackupCrash(int primaryPosition) {
-        // Step 1: remove backup
         try {
             rwLock.writeLock().lock();
+            // Step 1: remove backup
             state.removePlayer(state.players.get(primaryPosition+1).name);
-        } finally {
-            rwLock.writeLock().unlock();
-        }
 
-        // Step 2: appoint new backup
-        // 1 since if primary is i-th, backup is i+1 and new backup is i+2
-        // but old backup was removed, hence newbackup is i+1
-        // assume: Messages never get lost (under TCP and RMI) and message propagation delay is at most 0.2 second.
-        try {
-            rwLock.readLock().lock();
-            state.playerRefs.get(primaryPosition + 1).push(this.state);
+            // Step 2: appoint new backup
+            // 1 since if primary is i-th, backup is i+1 and new backup is i+2
+            // but old backup was removed, hence newbackup is i+1
+            // assume: Messages never get lost (under TCP and RMI) and message propagation delay is at most 0.2 second.
+            pushToBackup();
         } catch (Exception e) {
             System.out.println(e.getMessage());
         } finally {
-            rwLock.readLock().unlock();
+            rwLock.writeLock().unlock();
         }
     }
 
@@ -416,24 +411,10 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
         // Step 2: remove primary. can be after step 1 since other players will fail anyway
         try {
-            rwLock.writeLock().lock();
-            state.removePlayer(state.players.get(backupPosition - 1).name);
-        } finally {
-            rwLock.writeLock().unlock();
-        }
-
-        // Step 3: appoint new backup
-        // note that this step might not be relevant since while handling primary crash, other players
-        // request to `this` would result a push to the next-in-line and automatically promote a new backup server
-        //
-        // assume: Messages never get lost (under TCP and RMI) and message propagation delay is at most 0.2 second.
-        try {
-            rwLock.readLock().lock();
-            state.playerRefs.get(backupPosition).push(this.state);
+            // Step 3: appoint new backup is handled in the `leave` function
+            leave(state.players.get(backupPosition - 1).name);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-        } finally {
-            rwLock.readLock().unlock();
+
         }
     }
 
