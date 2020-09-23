@@ -70,7 +70,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     @Override
     public void push(State latest) throws Exception {
         if (playerType == PlayerType.Primary) {
-            throw new Exception("cannot push to primary");
+            throw new Exception("cannot push to primary " + name);
         }
 
         if (playerType == PlayerType.Normal) {
@@ -94,8 +94,8 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
 
         if (playerType != PlayerType.Primary) {
-            System.out.println("can't reg with me, im " + name + " " + this + ", im a " + playerType);
-            throw new Exception("not primary");
+            System.out.println("can't register with me, im " + name + " " + this + ", im a " + playerType);
+            throw new Exception(name + " not primary");
         }
 
         try {
@@ -131,11 +131,11 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     @Override
     public State move(Move move, String caller) throws Exception {
         if (playerType == PlayerType.Retiree) {
-            throw new RetiringException("Im retiring");
+            throw new RetiringException(name + " retiring");
         }
 
         if (playerType != PlayerType.Primary) {
-            throw new Exception("not primary");
+            throw new Exception(name + " not primary");
         }
 
         if (caller.equals(name)) {
@@ -150,7 +150,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             rwLock.writeLock().lock();
             state.move(move, caller);
             Duration timeElapsed = Duration.between(start, Instant.now());
-            System.out.println("Time taken for 1 write: "+ (timeElapsed.toNanos()) +" ns");
+            System.out.println("Time taken for 1 write: "+ (timeElapsed.toMillis()) +" ms");
             pushToBackup();
             return this.state;
         } finally {
@@ -161,7 +161,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     @Override
     public State get(String caller) throws Exception {
         if (playerType == PlayerType.Primary) {
-            throw new Exception("not server");
+            throw new Exception("cannot fetch from primary " + name);
         }
 
         if (caller.equals(this.name)) {
@@ -179,7 +179,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     @Override
     public State leave(String leaver) throws Exception {
         if (playerType != PlayerType.Primary) {
-            throw new Exception("not primary");
+            throw new Exception(name + " is not a primary server, cannot process `leave` request");
         }
 
         System.out.println("Removing " + leaver);
@@ -188,7 +188,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             rwLock.writeLock().lock();
             state.removePlayer(leaver);
             pushToBackup();
-            System.out.println("Removed" + leaver);
+            System.out.println("Removed " + leaver);
             return this.state;
         } finally {
             rwLock.writeLock().unlock();
@@ -198,7 +198,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     @Override
     public void setPrimary(String leaver) throws Exception {
         if (playerType != PlayerType.Backup) {
-            throw new Exception("not backup");
+            throw new Exception(name + " is not a backup");
         }
 
         playerType = PlayerType.Primary;
