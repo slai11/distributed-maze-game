@@ -507,6 +507,11 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 }
             }
             state.draw(g ,spacing ,cellSize, grid);
+
+            Font f = new Font("Arial", Font.BOLD, 14);
+            g.setFont(f);
+            g.setColor(Color.black);
+            g.drawString("Left->1   Down->2  Right->3   Up->4", cellSize, grid+15);
         }
     }
 }
