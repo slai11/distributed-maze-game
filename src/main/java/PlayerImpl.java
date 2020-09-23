@@ -389,19 +389,9 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
     private void handleBackupCrash(int primaryPosition) {
         try {
-            rwLock.writeLock().lock();
-            // Step 1: remove backup
-            state.removePlayer(state.players.get(primaryPosition+1).name);
-
-            // Step 2: appoint new backup
-            // 1 since if primary is i-th, backup is i+1 and new backup is i+2
-            // but old backup was removed, hence newbackup is i+1
-            // assume: Messages never get lost (under TCP and RMI) and message propagation delay is at most 0.2 second.
-            pushToBackup();
+            leave(state.players.get(primaryPosition + 1).name);
         } catch (Exception e) {
             System.out.println(e.getMessage());
-        } finally {
-            rwLock.writeLock().unlock();
         }
     }
 
@@ -414,7 +404,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             // Step 3: appoint new backup is handled in the `leave` function
             leave(state.players.get(backupPosition - 1).name);
         } catch (Exception e) {
-
+            System.out.println(e.getMessage());
         }
     }
 
