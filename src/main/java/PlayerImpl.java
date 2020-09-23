@@ -318,8 +318,13 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     private void pushToBackup() throws Exception {
         // do nothing if only primary
         if (state.playerRefs.size() == 1) return;
-        for (int i = 1; i < state.playerRefs.size(); i++) {
-            state.playerRefs.get(i).push(state);
+        try {
+            for (int i = 1; i < state.playerRefs.size(); i++) {
+                state.playerRefs.get(i).push(state);
+                break;
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
     }
 
