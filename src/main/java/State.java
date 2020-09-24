@@ -95,7 +95,7 @@ public class State implements Serializable {
 
             moving.pos = newPosition;
             players.set(i, moving);
-            System.out.println(moving.score);
+            System.out.println("Score: " + moving.score);
 
             count += 1;
             return;
