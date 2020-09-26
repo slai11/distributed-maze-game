@@ -70,6 +70,11 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     public void ping() {}
 
     @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
     public void push(State latest) throws Exception {
         if (playerType == PlayerType.Primary) {
             throw new Exception("cannot push to primary " + name);

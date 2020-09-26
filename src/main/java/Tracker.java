@@ -40,6 +40,23 @@ public class Tracker implements TrackerRMI {
         }
     }
 
+    @Override
+    public void unregister(String name) throws RemoteException {
+        try {
+            int i;
+            for (i = 0; i < players.size(); i++) {
+                if (players.get(i).getName().equals(name)) {
+                    break;
+                }
+            }
+
+            lock.lock();
+            players.remove(i);
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public static void main(String[] args) {
         if(args.length != 3) {
             System.out.println("Wrong number of parameters...exiting");
