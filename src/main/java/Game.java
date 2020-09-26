@@ -21,7 +21,7 @@ public class Game {
 
         // bootstrap phase
         TrackerRMI trackerRMIRef = (TrackerRMI) LocateRegistry.getRegistry(host, port).lookup("TrackerRMI");
-        Bootstrap bs = trackerRMIRef.register(playerRef);
+        Bootstrap bs = trackerRMIRef.register(playerRef, id);
         playerRef.bootstrap(bs);
 
         // GUI phase

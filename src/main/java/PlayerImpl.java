@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.Serializable;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import java.time.Duration;
 import java.time.Instant;
@@ -68,11 +69,6 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     // ping does nothing. if its not contactable, remote exception is thrown
     @Override
     public void ping() {}
-
-    @Override
-    public String getName() {
-        return name;
-    }
 
     @Override
     public void push(State latest) throws Exception {
@@ -395,7 +391,9 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
     private void handleBackupCrash(int primaryPosition) {
         try {
-            leave(state.players.get(primaryPosition + 1).name);
+            String name = state.players.get(primaryPosition + 1).name;
+            leave(name);
+            removeFromTracker(name);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -408,7 +406,9 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         // Step 2: remove primary. can be after step 1 since other players will fail anyway
         try {
             // Step 3: appoint new backup is handled in the `leave` function
-            leave(state.players.get(backupPosition - 1).name);
+            String name = state.players.get(backupPosition - 1).name;
+            leave(name);
+            removeFromTracker(name);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -446,9 +446,19 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             if (state.playerRefs.size() <= pos + 1) return;
             state.playerRefs.get(pos + 1).ping();
         } catch (RemoteException e) {
+            System.out.println("player at " + (pos+1) + " is gone!");
             String name = state.players.get(pos+1).name;
-            System.out.println(name + " [normal] at " + (pos+1) + " is gone!");
             reportCrash(name);
+            removeFromTracker(name);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private void removeFromTracker(String leaver) {
+        try {
+            TrackerRMI trackerRMIRef = (TrackerRMI) LocateRegistry.getRegistry(trackerInfo.host, trackerInfo.port).lookup(trackerInfo.name);
+            trackerRMIRef.unregister(leaver);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
