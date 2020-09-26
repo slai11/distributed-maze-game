@@ -79,7 +79,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
 
         try {
-            System.out.println("Received state " + latest.count);
+            System.out.println("Received push COUNT: " + latest.count);
             rwLock.writeLock().lock();
             this.state = latest;
         } finally {
@@ -150,7 +150,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             rwLock.writeLock().lock();
             state.move(move, caller);
             Duration timeElapsed = Duration.between(start, Instant.now());
-            System.out.println("Time taken for 1 write: "+ (timeElapsed.toMillis()) +" ms");
+            System.out.println("Time taken for 1 write: "+ (timeElapsed.toMillis()) +" ms\n");
             pushToBackup();
             return this.state;
         } finally {
@@ -182,13 +182,11 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             throw new Exception(name + " is not a primary server, cannot process `leave` request");
         }
 
-        System.out.println("Removing " + leaver);
-
         try {
             rwLock.writeLock().lock();
             state.removePlayer(leaver);
             pushToBackup();
-            System.out.println("Removed " + leaver);
+            System.out.println("Removed " + leaver + " from state");
             return this.state;
         } finally {
             rwLock.writeLock().unlock();
@@ -237,7 +235,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
     public void sendMove(Move move) {
         if (this.playerType == PlayerType.Primary) {
-            System.out.println("im the primary so i change my own state");
+            System.out.println(name + " [primary] asked to Move " + move);
             try {
                 rwLock.writeLock().lock();
                 state.move(move, name);
@@ -294,7 +292,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
     public void refreshState() {
         if (playerType == PlayerType.Primary || playerType == PlayerType.Backup) {
-            System.out.print("nothing to refresh");
+            System.out.print(name + " " + playerType + "asked to Refresh");
             return;
         }
 
@@ -412,7 +410,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             if (state.playerRefs.size() <= pos + 1) return;
             state.playerRefs.get(pos + 1).ping();
         } catch (RemoteException e) {
-            System.out.println("backup server at " + (pos+1) + " is gone!");
+            System.out.println(state.players.get(pos+1).name + " [backup] at " + (pos+1) + " is gone!");
             handleBackupCrash(pos);
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -423,7 +421,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         try {
             state.playerRefs.get(pos - 1).ping();
         } catch (RemoteException e) {
-            System.out.println("primary server at " + (pos+1) + " is gone!");
+            System.out.println(state.players.get(pos-1).name + " [primary] at " + (pos-1) + " is gone!");
             handlePrimaryCrash(pos);
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -439,8 +437,9 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             if (state.playerRefs.size() <= pos + 1) return;
             state.playerRefs.get(pos + 1).ping();
         } catch (RemoteException e) {
-            System.out.println("player at " + (pos+1) + " is gone!");
-            reportCrash(state.players.get(pos+1).name);
+            String name = state.players.get(pos+1).name;
+            System.out.println(name + " [normal] at " + (pos+1) + " is gone!");
+            reportCrash(name);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
