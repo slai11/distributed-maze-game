@@ -19,7 +19,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     private final String name;
     private PlayerType playerType;
     private TrackerInfo trackerInfo;
-    private ReadWriteLock rwLock = new ReentrantReadWriteLock();
+    private ReadWriteLock rwLock = new ReentrantReadWriteLock(true);
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public PlayerImpl(String name) throws RemoteException {
