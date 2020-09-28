@@ -9,6 +9,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Tracker implements TrackerRMI {
     // players here should not have game state, just player info
     private Vector<Player> players;
+    private Vector<String> playerIds;
     private final int N;
     private final int K;
     private TrackerInfo trackerInfo;
@@ -17,6 +18,7 @@ public class Tracker implements TrackerRMI {
 
     public Tracker(int port, int N, int K, String name) {
         this.players = new Vector<>();
+        this.playerIds = new Vector<>();
         this.N = N;
         this.K = K;
 
@@ -29,14 +31,39 @@ public class Tracker implements TrackerRMI {
     }
 
     @Override
-    public Bootstrap register(Player player) {
+    public Bootstrap register(Player player, String name) {
         System.out.println("new player registering!");
         try {
             lock.lock();
             players.addElement(player);
+            playerIds.addElement(name);
             return new Bootstrap(players, N, K, trackerInfo);
         } finally {
             lock.unlock();
+        }
+    }
+
+    @Override
+    public void unregister(String name) {
+        System.out.println("Remove crashed player from tracker " + name);
+        int i;
+        for (i = 0; i < playerIds.size(); i++) {
+            if (playerIds.get(i).equals(name)) {
+                break;
+            }
+        }
+
+        // Prevent same deletion > once
+        if (i < playerIds.size()) {
+            try {
+                lock.lock();
+                players.remove(i);
+                playerIds.remove(i);
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            } finally {
+                lock.unlock();
+            }
         }
     }
 
