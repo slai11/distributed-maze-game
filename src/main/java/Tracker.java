@@ -9,20 +9,20 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Tracker implements TrackerRMI {
     // players here should not have game state, just player info
     private Vector<Player> players;
-    private int port;
     private final int N;
     private final int K;
+    private TrackerInfo trackerInfo;
 
     private ReentrantLock lock = new ReentrantLock();
 
-    public Tracker(int port, int N, int K) {
-        this.port = port;
+    public Tracker(int port, int N, int K, String name) {
         this.players = new Vector<>();
         this.N = N;
         this.K = K;
 
         try {
             System.out.println("Tracker's IP Host Address: " + InetAddress.getLocalHost().getHostAddress());
+            this.trackerInfo = new TrackerInfo(InetAddress.getLocalHost().getHostAddress(), port, name);
         } catch (Exception e) {
             System.out.println("Error");
         }
@@ -34,7 +34,7 @@ public class Tracker implements TrackerRMI {
         try {
             lock.lock();
             players.addElement(player);
-            return new Bootstrap(players, N, K);
+            return new Bootstrap(players, N, K, trackerInfo);
         } finally {
             lock.unlock();
         }
@@ -54,10 +54,11 @@ public class Tracker implements TrackerRMI {
         Registry registry = null;
 
         try {
-            Tracker t = new Tracker(port, n, k);
+            String stubId= "TrackerRMI";
+            Tracker t = new Tracker(port, n, k, stubId);
             stub = (TrackerRMI) UnicastRemoteObject.exportObject(t, 0);
-            registry = LocateRegistry.getRegistry(port);
-            registry.bind("TrackerRMI", stub);
+            registry = LocateRegistry.createRegistry(port);
+            registry.bind(stubId, stub);
 
             System.out.println("Tracker Ready");
         } catch (Exception e1) {

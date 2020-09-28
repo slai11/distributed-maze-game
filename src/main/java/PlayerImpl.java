@@ -17,6 +17,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
     private final String name;
     private PlayerType playerType;
+    private TrackerInfo trackerInfo;
     private ReadWriteLock rwLock = new ReentrantReadWriteLock();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -30,6 +31,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
      * @param bs
      */
     public void bootstrap(Bootstrap bs) {
+        this.trackerInfo = bs.trackerInfo;
         // iterate over player list to register with primary
         // since players contact tracker for (1) first joining and (2) crash recovery
         // the primary could have left. Iterating over player list is the safest method.
