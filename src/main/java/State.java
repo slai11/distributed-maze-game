@@ -105,6 +105,7 @@ public class State implements Serializable {
 
     public void removePlayer(String leaver) {
         int i;
+        // TODO boolean found
         for (i = 0; i < players.size(); i++) {
             if (players.get(i).name.equals(leaver)) {
                 break;

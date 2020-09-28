@@ -31,24 +31,28 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
      * Bootstrap is the "real" constructor
      * @param bs
      */
-    public void bootstrap(Bootstrap bs) {
+    public boolean bootstrap(Bootstrap bs) {
         this.trackerInfo = bs.trackerInfo;
         // iterate over player list to register with primary
         // since players contact tracker for (1) first joining and (2) crash recovery
         // the primary could have left. Iterating over player list is the safest method.
         // while slow, only THIS player experiences the slowness.
-        for (Player player: bs.players) {
-            try {
-                this.state = player.register(this, name);
-                break;
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
+        if (bs.players.size() == 1) {
+            // this is primary - need to initialise State
+            this.state = new State(this, name, bs.N, bs.K);
+        } else {
+            for (Player player: bs.players) {
+                try {
+                    this.state = player.register(this, name);
+                    break;
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                }
             }
         }
 
         if (this.state == null) {
-            // this is primary - need to initialise State
-            this.state = new State(this, name, bs.N, bs.K);
+            return false;
         }
 
         switch (state.players.size()) {
@@ -64,6 +68,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
         System.out.println(name + " is a " + playerType);
         startBackgroundPing();
+        return true;
     }
 
     // ping does nothing. if its not contactable, remote exception is thrown
@@ -285,6 +290,8 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
             try {
                 rwLock.writeLock().lock();
+                // TODO null-check, failure to make move should just be gracefully handled
+                // not set state to null
                 state = newState;
                 break;
             } finally {

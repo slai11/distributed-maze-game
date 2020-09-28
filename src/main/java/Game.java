@@ -21,8 +21,18 @@ public class Game {
 
         // bootstrap phase
         TrackerRMI trackerRMIRef = (TrackerRMI) LocateRegistry.getRegistry(host, port).lookup("TrackerRMI");
-        Bootstrap bs = trackerRMIRef.register(playerRef, id);
-        playerRef.bootstrap(bs);
+
+        boolean isSuccessful;
+        int tries = 0;
+        do {
+            Bootstrap bs = trackerRMIRef.register(playerRef, id);
+            isSuccessful = playerRef.bootstrap(bs);
+        } while (!isSuccessful && tries++ < 5);
+
+        if (!isSuccessful) {
+            System.out.print("Failed to register after 5 tries");
+            System.exit(1);
+        }
 
         // GUI phase
         JFrame frame = new JFrame();
