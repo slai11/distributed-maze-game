@@ -25,6 +25,7 @@ public class Game {
         boolean isSuccessful;
         int tries = 0;
         do {
+            Thread.sleep(500); // wait 0.5s for ping to detect failure
             Bootstrap bs = trackerRMIRef.register(playerRef, id);
             isSuccessful = playerRef.bootstrap(bs);
         } while (!isSuccessful && tries++ < 5);
