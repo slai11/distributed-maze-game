@@ -160,11 +160,15 @@ public class State implements Serializable {
 
     public void draw(Graphics g, int spacing, int cellSize, int offset) {
         int i = 0;
+        Font f = new Font("Arial", Font.BOLD, cellSize/2);
+        g.setFont(f);
         for (PlayerInfo playerInfo: players) {
             playerInfo.draw(g, spacing, cellSize, offset, i);
             i++;
         }
-
+        f.deriveFont(Font.BOLD, cellSize);
+        g.setFont(f);
+        g.setColor(Color.darkGray);
         for (Position treasure: treasures) {
             treasure.draw(g, spacing, cellSize, offset);
         }
