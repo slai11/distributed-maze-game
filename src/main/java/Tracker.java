@@ -67,6 +67,16 @@ public class Tracker implements TrackerRMI {
         }
     }
 
+    @Override
+    public Bootstrap fetch() {
+        try {
+            lock.lock();
+            return new Bootstrap(players, N, K, trackerInfo);
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public static void main(String[] args) {
         if(args.length != 3) {
             System.out.println("Wrong number of parameters...exiting");
