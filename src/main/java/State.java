@@ -39,11 +39,10 @@ public class State implements Serializable {
     public void pretty() {
         System.out.println("COUNT: " + count);
         for (PlayerInfo p: players) {
-            System.out.println(p.name + " has score " + p.score + ". Now at "+ (p.pos.x + 1) + ", " + (p.pos.y + 1) );
+            System.out.print(p.name + " has score " + p.score + ". Now at "+ (p.pos.x + 1) + ", " + (p.pos.y + 1) + " | " );
         }
-
         for (Position t: treasures) {
-            System.out.println("Treasure at "+ (t.x + 1) + ", " + (t.y + 1) );
+            System.out.print("Treasure at "+ (t.x + 1) + ", " + (t.y + 1) + " |");
         }
     }
 

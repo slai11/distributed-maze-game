@@ -200,6 +200,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
 
         playerType = PlayerType.Primary;
+        System.out.println(name + " is now a primary");
         try {
             leave(leaver);
         } catch (Exception e) {
@@ -243,7 +244,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 rwLock.writeLock().unlock();
             }
 
-            state.pretty();
+            //state.pretty();
             return;
         }
 
@@ -287,15 +288,16 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 rwLock.writeLock().unlock();
             }
         }
-        state.pretty();
+        //state.pretty();
     }
 
     public void refreshState() {
         if (playerType == PlayerType.Primary || playerType == PlayerType.Backup) {
-            System.out.print(name + " " + playerType + "asked to Refresh");
+            System.out.println(name + " am " + playerType + " nothing to refresh");
             return;
         }
 
+        // TODO just start from index 1?
         for (Player player: state.playerRefs) {
             try {
                 rwLock.writeLock().lock();
@@ -315,13 +317,13 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     private void pushToBackup() throws Exception {
         // do nothing if only primary
         if (state.playerRefs.size() == 1) return;
-        try {
-            for (int i = 1; i < state.playerRefs.size(); i++) {
+        for (int i = 1; i < state.playerRefs.size(); i++) {
+            try {
                 state.playerRefs.get(i).push(state);
                 break;
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
             }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
         }
     }
 
