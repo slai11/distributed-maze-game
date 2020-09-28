@@ -166,9 +166,8 @@ public class State implements Serializable {
             playerInfo.draw(g, spacing, cellSize, offset, i);
             i++;
         }
-        f.deriveFont(Font.BOLD, cellSize);
-        g.setFont(f);
-        g.setColor(Color.darkGray);
+        g.setFont(f.deriveFont(Font.BOLD, cellSize));
+        g.setColor(Color.black);
         for (Position treasure: treasures) {
             treasure.draw(g, spacing, cellSize, offset);
         }
