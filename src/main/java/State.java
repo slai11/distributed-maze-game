@@ -105,14 +105,18 @@ public class State implements Serializable {
 
     public void removePlayer(String leaver) {
         int i;
-        // TODO boolean found
+        boolean found = false;
         for (i = 0; i < players.size(); i++) {
             if (players.get(i).name.equals(leaver)) {
+                found = true;
                 break;
             }
         }
-        players.remove(i);
-        playerRefs.remove(i);
+
+        if (found) {
+            players.remove(i);
+            playerRefs.remove(i);
+        }
     }
 
     // isNewPositionValid checks if new position is out of bound and if any other player already occupies the spot.
