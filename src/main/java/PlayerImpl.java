@@ -251,7 +251,6 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             } finally {
                 rwLock.writeLock().unlock();
             }
-
             //state.pretty();
             return;
         }
@@ -288,10 +287,12 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
                 continue;
             }
 
+            if (newState == null) {
+                System.out.println(name + " failed to make a move!");
+            }
+
             try {
                 rwLock.writeLock().lock();
-                // TODO null-check, failure to make move should just be gracefully handled
-                // not set state to null
                 state = newState;
                 break;
             } finally {
