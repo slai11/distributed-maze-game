@@ -2,7 +2,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.Serializable;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import java.time.Duration;
 import java.time.Instant;
@@ -391,9 +390,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
     private void handleBackupCrash(int primaryPosition) {
         try {
-            String name = state.players.get(primaryPosition + 1).name;
-            leave(name);
-            removeFromTracker(name);
+            leave(state.players.get(primaryPosition + 1).name);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -406,9 +403,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         // Step 2: remove primary. can be after step 1 since other players will fail anyway
         try {
             // Step 3: appoint new backup is handled in the `leave` function
-            String name = state.players.get(backupPosition - 1).name;
-            leave(name);
-            removeFromTracker(name);
+            leave(state.players.get(backupPosition - 1).name);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -447,18 +442,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             state.playerRefs.get(pos + 1).ping();
         } catch (RemoteException e) {
             System.out.println("player at " + (pos+1) + " is gone!");
-            String name = state.players.get(pos+1).name;
-            reportCrash(name);
-            removeFromTracker(name);
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
-    private void removeFromTracker(String leaver) {
-        try {
-            TrackerRMI trackerRMIRef = (TrackerRMI) LocateRegistry.getRegistry(trackerInfo.host, trackerInfo.port).lookup(trackerInfo.name);
-            trackerRMIRef.unregister(leaver);
+            reportCrash(state.players.get(pos+1).name);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
