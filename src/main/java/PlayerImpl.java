@@ -289,6 +289,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
             if (newState == null) {
                 System.out.println(name + " failed to make a move!");
+                return;
             }
 
             try {
