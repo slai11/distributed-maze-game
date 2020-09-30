@@ -482,14 +482,16 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
 
         @Override
         public void paintComponent(Graphics g) {
+            super.paintComponent(g);
             g.setColor(Color.gray);
             g.fillRect(0, 0, 2*grid, grid);
             g.setColor(Color.DARK_GRAY);
             g.fillRect(grid,0, grid, grid);
             g.setColor(Color.gray);
-            int cellSize = Math.round(grid/state.getN());
-            for(int i = 0; i < state.getN(); i++) {
-                for(int j = 0; j < state.getN(); j++) {
+            int n = state.getN();
+            int cellSize = Math.round(grid/n);
+            for(int i = 0; i < n; i++) {
+                for(int j = 0; j < n; j++) {
                     g.fillRect(grid + spacing+i*cellSize, spacing+j*cellSize, cellSize-2*spacing, cellSize-2*spacing );
                 }
             }
