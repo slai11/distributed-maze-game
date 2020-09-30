@@ -248,6 +248,9 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             try {
                 rwLock.writeLock().lock();
                 state.move(move, name);
+                pushToBackup();
+            } catch (Exception e){
+                System.out.println(e.getMessage());
             } finally {
                 rwLock.writeLock().unlock();
             }
