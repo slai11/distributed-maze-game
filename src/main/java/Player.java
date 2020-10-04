@@ -19,7 +19,7 @@ public interface Player extends Remote {
      * of players.
      * It also generates a player on the grid with the name as reference point.
      */
-    State register(Player p, String caller) throws RemoteException, Exception;
+    State register(Player p, String caller, int idx) throws RemoteException, Exception;
 
     State move(Move move, String caller) throws RemoteException, Exception;
 

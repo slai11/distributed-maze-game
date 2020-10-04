@@ -16,6 +16,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class PlayerImpl extends UnicastRemoteObject implements Player, Serializable {
     public State state;
 
+    private int N;
+    private int K;
     private final String name;
     private PlayerType playerType;
     private TrackerInfo trackerInfo;
@@ -32,22 +34,19 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
      * @param bs
      */
     public boolean bootstrap(Bootstrap bs) {
+        this.N = bs.N;
+        this.K = bs.K;
         this.trackerInfo = bs.trackerInfo;
         // iterate over player list to register with primary
         // since players contact tracker for (1) first joining and (2) crash recovery
         // the primary could have left. Iterating over player list is the safest method.
         // while slow, only THIS player experiences the slowness.
-        if (bs.players.size() == 1) {
-            // this is primary - need to initialise State
-            this.state = new State(this, name, bs.N, bs.K);
-        } else {
-            for (Player player: bs.players) {
-                try {
-                    this.state = player.register(this, name);
-                    break;
-                } catch (Exception e) {
-                    System.out.println(e.getMessage());
-                }
+        for (int i = 0; i < bs.players.size(); i++) {
+            try {
+                this.state = bs.players.get(i).register(this, name, i);
+                break;
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
             }
         }
 
@@ -55,11 +54,12 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             return false;
         }
 
-        switch (state.players.size()) {
-            case 1:
+        // Issue: O(n) time complexity
+        switch (getPlayerPos()) {
+            case 0:
                 this.playerType = PlayerType.Primary;
                 break;
-            case 2:
+            case 1:
                 this.playerType = PlayerType.Backup;
                 break;
             default:
@@ -96,9 +96,16 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
     }
 
     @Override
-    public State register(Player p, String caller) throws Exception {
+    public State register(Player p, String caller, int idx) throws Exception {
         if (caller.equals(name)) {
-            throw new Exception("cannot register with self");
+            switch (idx) {
+                case 0:
+                    // primary register itself
+                    return new State(this, name, this.N, this.K);
+                default:
+                    // invalid state
+                    throw new Exception("cannot register with self");
+            }
         }
 
         if (playerType != PlayerType.Primary) {
