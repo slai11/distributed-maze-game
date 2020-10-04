@@ -45,25 +45,27 @@ public class Tracker implements TrackerRMI {
 
     @Override
     public void unregister(String name) {
-        System.out.println("Remove crashed player from tracker " + name);
-        int i;
-        for (i = 0; i < playerIds.size(); i++) {
-            if (playerIds.get(i).equals(name)) {
-                break;
-            }
-        }
+        try {
+            System.out.println("Remove crashed player from tracker " + name);
 
-        // Prevent same deletion > once
-        if (i < playerIds.size()) {
-            try {
-                lock.lock();
+            // lock for player lookup to avoid concurrency issue with multiple unregister
+            // even though crashes are spaced part with a minimal 3 second window.
+            lock.lock();
+
+            int i;
+            for (i = 0; i < playerIds.size(); i++) {
+                if (playerIds.get(i).equals(name)) {
+                    break;
+                }
+            }
+
+            // Prevent same deletion > once
+            if (i < playerIds.size()) {
                 players.remove(i);
                 playerIds.remove(i);
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-            } finally {
-                lock.unlock();
             }
+        } finally {
+            lock.unlock();
         }
     }
 
