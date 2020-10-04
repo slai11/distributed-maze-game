@@ -312,11 +312,12 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             return;
         }
 
-        // TODO just start from index 1?
-        for (Player player: state.playerRefs) {
+        // omit 0 to skip primary since we read from backup
+        // this reduces the workload on primary
+        for (int i = 1; i < state.playerRefs.size(); i++) {
             try {
                 rwLock.writeLock().lock();
-                this.state = player.get(name);
+                this.state = state.playerRefs.get(i).get(name);
                 break;
             } catch (Exception e) {
                 System.out.println(e.getMessage());
