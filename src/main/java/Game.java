@@ -24,11 +24,14 @@ public class Game {
 
         boolean isSuccessful;
         int tries = 0;
-        do {
+        Bootstrap bs = trackerRMIRef.register(playerRef, id);
+        isSuccessful = playerRef.bootstrap(bs);
+
+        while (!isSuccessful && tries++ < 5) {
             Thread.sleep(500); // wait 0.5s for ping to detect failure
-            Bootstrap bs = trackerRMIRef.register(playerRef, id);
+            bs = trackerRMIRef.fetch();
             isSuccessful = playerRef.bootstrap(bs);
-        } while (!isSuccessful && tries++ < 5);
+        }
 
         if (!isSuccessful) {
             System.out.print("Failed to register after 5 tries");
