@@ -55,16 +55,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         }
 
         // Issue: O(n) time complexity
-        switch (getPlayerPos()) {
-            case 0:
-                this.playerType = PlayerType.Primary;
-                break;
-            case 1:
-                this.playerType = PlayerType.Backup;
-                break;
-            default:
-                this.playerType = PlayerType.Normal;
-        }
+        reIdentifySelf();
 
         System.out.println(name + " is a " + playerType);
         startBackgroundPing();
@@ -81,15 +72,13 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             throw new Exception("cannot push to primary " + name);
         }
 
-        if (playerType == PlayerType.Normal) {
-            // normal player receiving a push means THIS player is now backup
-            playerType = PlayerType.Backup;
-        }
-
         try {
             System.out.println("Received push COUNT: " + latest.count);
             rwLock.writeLock().lock();
             this.state = latest;
+            if (playerType == PlayerType.Normal) {
+                reIdentifySelf();
+            }
         } finally {
             rwLock.writeLock().unlock();
         }
@@ -218,6 +207,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
         System.out.println(name + " is now a primary");
         try {
             leave(leaver);
+            reIdentifySelf();
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -429,6 +419,7 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             String name = state.players.get(backupPosition - 1).name;
             leave(name);
             removeFromTracker(name);
+            reIdentifySelf();
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -481,6 +472,19 @@ public class PlayerImpl extends UnicastRemoteObject implements Player, Serializa
             trackerRMIRef.unregister(leaver);
         } catch (Exception e) {
             System.out.println(e.getMessage());
+        }
+    }
+
+    private void reIdentifySelf() {
+        switch (getPlayerPos()) {
+            case 0:
+                playerType = PlayerType.Primary;
+                break;
+            case 1:
+                playerType = PlayerType.Backup;
+                break;
+            default:
+                playerType = PlayerType.Normal;
         }
     }
 
